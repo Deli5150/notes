@@ -18,3 +18,9 @@ test('empty notes have no title', () => {
 test('a word the note keeps coming back to', () => {
   assert.equal(localTitle('Flights to Lisbon leave Friday at 9. Book the hotel near the river in Lisbon, and plan the Lisbon food tour.\nPack light: the Lisbon trip is only four days.'), 'Lisbon')
 })
+
+test('the preview under a title is the body, all of it when the title has its own field', async () => {
+  const { snippetOf } = await import('../src/lib/content.ts')
+  assert.equal(snippetOf('milk, eggs, spinach', 'Groceries'), 'milk, eggs, spinach')
+  assert.equal(snippetOf('Groceries\nmilk, eggs', 'Groceries'), 'milk, eggs')
+})

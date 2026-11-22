@@ -83,8 +83,9 @@ export function derive(html: string): Derived {
 /** The preview line under a note's title in the list: the text after the title. */
 export function snippetOf(text: string, title: string): string {
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
-  const i = lines.findIndex((l) => l === title)
-  const rest = (i >= 0 ? lines.slice(i + 1) : lines.slice(1)).join(' ')
+  // A note without its own title uses its first line as one: the preview starts after it. With a
+  // title field, the whole body is the preview.
+  const rest = (lines[0] === title ? lines.slice(1) : lines).join(' ')
   return rest.slice(0, 160)
 }
 

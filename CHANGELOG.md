@@ -12,6 +12,8 @@ The first release of Notes, for Mac and Windows.
 - Collapsible sections, Lines & Grids, links between notes (type >>), find & replace
 - Locked notes with one password, and Touch ID on Macs
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
+- Nothing theme: notes in the sidebar sit on solid cards, so they’re easy to read over the dot grid
+- Note previews in the list show the body again for notes with a title
 - Settings → Import shows each app’s own icon
 - A note closed or left with nothing in it is deleted, so there are never empty notes
 - Floating Quick Note: a small note above every app, shown and hidden with ⌃⌘N (Ctrl+Alt+N on Windows)

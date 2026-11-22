@@ -2299,6 +2299,38 @@ kbd {
   letter-spacing: 0.04em;
 }
 
+/* The list sits on the dot grid: each note is a solid card (like Nothing's widgets), so no dots
+   run behind its text, and the small mono labels get the stronger grey. */
+:root[data-style='nothing'] .note-row {
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--sep);
+  margin-bottom: 6px;
+}
+
+:root[data-style='nothing'] .note-row:hover {
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 35%, transparent);
+}
+
+:root[data-style='nothing'] .note-row-date,
+:root[data-style='nothing'] .note-row-folder {
+  color: var(--dim);
+}
+
+:root[data-style='nothing'] .note-row-snippet {
+  color: color-mix(in srgb, var(--text) 62%, var(--bg));
+}
+
+:root[data-style='nothing'] .list-section-label {
+  display: inline-block;
+  padding: 2px 6px;
+  margin-left: -2px;
+  border-radius: 5px;
+  background: var(--sidebar-solid);
+  color: var(--dim);
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
 :root[data-style='nothing'] .note-row.is-selected,
 :root[data-style='nothing'] .note-row.is-selected-dim {
   box-shadow: 0 0 0 1px var(--sep);
