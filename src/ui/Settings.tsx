@@ -80,7 +80,7 @@ function Group({ title, children, footer }: { title?: string; children: React.Re
 
 function General() {
   const s = useStore(useShallow((x) => x.settings))
-  const quickKeys = useKeys('global:quick-note')
+  const quickKeys = useKeys('global:float-note')
   return (
     <>
       <Group title="Notes">
@@ -151,7 +151,7 @@ function General() {
           />
         </Row>
         {desktop && (
-          <Row label="Quick Note shortcut" sub={quickKeys ? `${quickKeys} opens a new Quick Note from anywhere.` : 'Give it keys in Settings → Shortcuts.'}>
+          <Row label="Floating Quick Note" sub={quickKeys ? `${quickKeys} shows or hides a Quick Note that floats above every app.` : 'Give it keys in Settings → Shortcuts.'}>
             <Toggle
               on={s.quickNoteShortcut}
               onChange={(v) => {

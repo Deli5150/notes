@@ -74,6 +74,17 @@ export function runCommand(cmd: string, arg?: string): void {
     case 'about':
       useUi.setState({ settings: 'about' })
       break
+    case 'open-note': {
+      // From the floating note: show it here.
+      const n = useStore.getState().notes.find((x) => x.id === arg)
+      if (!n) break
+      useUi.getState().select({ kind: 'folder', id: n.folderId })
+      useUi.getState().open(n.id)
+      break
+    }
+    case 'float-note':
+      desktop?.float.toggle()
+      break
     case 'search':
       searchNotes()
       break

@@ -41,6 +41,18 @@ export interface DesktopBridge {
   linkPreview(url: string): Promise<LinkPreview | null>
   openExternal(url: string): void
   closeWindow(): void
+  float: {
+    toggle(): void
+    hide(): void
+    pin(on: boolean): void
+    pinned(): Promise<boolean>
+    openInNotes(id: string): void
+    onShown(cb: () => void): () => void
+  }
+  windows: {
+    send(patch: import('./windows').Patch): void
+    onPatch(cb: (patch: import('./windows').Patch) => void): () => void
+  }
   setChrome(colors: { bg: string; fg: string; dark: boolean; translucent: boolean }): void
   setQuickNoteShortcut(on: boolean): void
   shortcuts: {

@@ -20,6 +20,26 @@ contextBridge.exposeInMainWorld('notesApp', {
   appleNotes: () => ipcRenderer.invoke('apple-notes'),
   linkPreview: (url) => ipcRenderer.invoke('link-preview', url),
   closeWindow: () => ipcRenderer.send('close-window'),
+  float: {
+    toggle: () => ipcRenderer.send('float:toggle'),
+    hide: () => ipcRenderer.send('float:hide'),
+    pin: (on) => ipcRenderer.send('float:pin', on),
+    pinned: () => ipcRenderer.invoke('float:pinned'),
+    openInNotes: (id) => ipcRenderer.send('float:open-in-notes', id),
+    onShown: (cb) => {
+      const listener = () => cb()
+      ipcRenderer.on('float:shown', listener)
+      return () => ipcRenderer.off('float:shown', listener)
+    }
+  },
+  windows: {
+    send: (patch) => ipcRenderer.send('windows:patch', patch),
+    onPatch: (cb) => {
+      const listener = (_e, patch) => cb(patch)
+      ipcRenderer.on('windows:patch', listener)
+      return () => ipcRenderer.off('windows:patch', listener)
+    }
+  },
   openExternal: (url) => ipcRenderer.send('open-external', url),
   setChrome: (c) => ipcRenderer.send('chrome', c),
   setQuickNoteShortcut: (on) => ipcRenderer.send('quick-note-shortcut', on),

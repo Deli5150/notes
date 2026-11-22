@@ -20,11 +20,12 @@ import '@fontsource/playfair-display/700.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { FloatingNote } from './ui/FloatingNote'
 import './styles/app.css'
 import './styles/editor.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {location.hash === '#float' ? <FloatingNote /> : <App />}
   </StrictMode>
 )

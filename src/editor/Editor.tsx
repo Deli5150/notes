@@ -392,9 +392,10 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
     }
   }, [editor, note.id])
 
-  // The note changed elsewhere (Sync, a tag renamed): show it, unless it's being typed in.
+  // The note changed elsewhere (Sync, a tag renamed, the other window): show it, unless it's being
+  // typed in (focus in a window that isn't in front doesn't count).
   useEffect(() => {
-    if (!editor || editor.isFocused || html === saved.current) return
+    if (!editor || (editor.isFocused && document.hasFocus()) || html === saved.current) return
     saved.current = html
     editor.commands.setContent(html || startHtml(), { emitUpdate: false })
   }, [editor, html])

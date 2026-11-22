@@ -107,8 +107,12 @@ function createWindow() {
     e.preventDefault()
     if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
   })
-  win.webContents.on('context-menu', (_e, params) => contextMenu(params))
-  win.webContents.on('before-input-event', onKey)
+  win.webContents.on('context-menu', (_e, params) => contextMenu(params, win))
+  win.webContents.on('before-input-event', (e, input) => onKey(e, input, 'main'))
+  win.on('closed', () => {
+    win = null
+    if (!isMac) app.quit()
+  })
   win.on('close', (e) => {
     // On a Mac, closing the window keeps Notes running (reopen it from the Dock), like Apple Notes.
     if (isMac && !app.isQuitting) {
@@ -119,7 +123,7 @@ function createWindow() {
 }
 
 function showWindow() {
-  if (!win) createWindow()
+  if (!win || win.isDestroyed()) createWindow()
   else {
     win.show()
     win.focus()
@@ -131,14 +135,131 @@ const send = (command, arg) => {
   win?.webContents.send('menu', command, arg)
 }
 
+// ── Floating Quick Note ──────────────────────────────────────────────────────────────────────
+// A small note that floats above every app, shown and hidden with one shortcut (like Raycast's
+// Floating Notes). It's the same page with #float, keeping its own copy of the data in step with the
+// main window (src/lib/windows.ts); the main window is the one that saves.
+
+let floatWin = null
+/** Notes wasn't the active app when the floating note opened: hiding it goes back to that app. */
+let floatFromOtherApp = false
+const FLOAT_FILE = () => path.join(app.getPath('userData'), 'floating-note.json')
+
+function createFloat() {
+  let b = {}
+  try {
+    b = JSON.parse(fs.readFileSync(FLOAT_FILE(), 'utf8'))
+  } catch {}
+  const { screen } = require('electron')
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+  const width = b.width ?? 380
+  const height = b.height ?? 440
+  const visible = b.x !== undefined && screen.getAllDisplays().some((d) => b.x >= d.workArea.x - 40 && b.x < d.workArea.x + d.workArea.width - 40 && b.y >= d.workArea.y - 10 && b.y < d.workArea.y + d.workArea.height - 40)
+  floatWin = new BrowserWindow({
+    width,
+    height,
+    x: visible ? b.x : Math.round(area.x + area.width - width - 40),
+    y: visible ? b.y : Math.round(area.y + 60),
+    minWidth: 260,
+    minHeight: 180,
+    title: 'Quick Note',
+    show: false,
+    frame: false,
+    type: isMac ? 'panel' : undefined,
+    alwaysOnTop: b.pinned !== false,
+    skipTaskbar: true,
+    fullscreenable: false,
+    minimizable: false,
+    maximizable: false,
+    hasShadow: true,
+    backgroundColor: isMac ? '#00000000' : '#ffffff',
+    vibrancy: isMac ? 'hud' : undefined,
+    visualEffectState: 'active',
+    backgroundMaterial: process.platform === 'win32' && translucency ? 'acrylic' : undefined,
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: false, spellcheck: true }
+  })
+  if (b.pinned !== false) floatWin.setAlwaysOnTop(true, 'floating')
+  floatWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  floatWin.loadURL(`${DEV_URL || 'app://notes/'}#float`)
+  floatWin.once('ready-to-show', () => showFloat())
+  floatWin.webContents.on('before-input-event', (e, input) => onKey(e, input, 'float'))
+  floatWin.webContents.on('context-menu', (_e, params) => contextMenu(params, floatWin))
+  floatWin.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  floatWin.webContents.on('will-navigate', (e, url) => {
+    if (url.startsWith('app://') || (DEV_URL && url.startsWith(DEV_URL))) return
+    e.preventDefault()
+    if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
+  })
+  // Closing only hides it, so the shortcut brings it straight back.
+  floatWin.on('close', (e) => {
+    if (app.isQuitting) return
+    e.preventDefault()
+    hideFloat()
+  })
+  floatWin.on('closed', () => (floatWin = null))
+  let timer = null
+  const remember = () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      if (!floatWin || floatWin.isDestroyed()) return
+      fs.writeFileSync(FLOAT_FILE(), JSON.stringify({ ...floatWin.getBounds(), pinned: floatWin.isAlwaysOnTop() }))
+    }, 400)
+  }
+  floatWin.on('moved', remember)
+  floatWin.on('resized', remember)
+  floatWin.on('always-on-top-changed', remember)
+}
+
+function showFloat() {
+  if (!floatWin || floatWin.isDestroyed()) return createFloat()
+  floatFromOtherApp = !BrowserWindow.getFocusedWindow()
+  floatWin.show()
+  floatWin.focus()
+  floatWin.webContents.send('float:shown')
+}
+
+function hideFloat() {
+  if (!floatWin || floatWin.isDestroyed() || !floatWin.isVisible()) return
+  floatWin.hide()
+  // Back to the app that was in front, as Raycast does.
+  if (isMac && floatFromOtherApp) app.hide()
+}
+
+function toggleFloat() {
+  if (floatWin && !floatWin.isDestroyed() && floatWin.isVisible() && floatWin.isFocused()) hideFloat()
+  else showFloat()
+}
+
+ipcMain.on('float:toggle', () => toggleFloat())
+ipcMain.on('float:hide', () => hideFloat())
+ipcMain.on('float:pin', (_e, on) => floatWin?.setAlwaysOnTop(Boolean(on), 'floating'))
+ipcMain.handle('float:pinned', () => Boolean(floatWin?.isAlwaysOnTop()))
+ipcMain.on('float:open-in-notes', (_e, id) => {
+  hideFloat()
+  floatFromOtherApp = false
+  send('open-note', id)
+})
+
+// The two windows tell each other what changed.
+ipcMain.on('windows:patch', (e, patch) => {
+  for (const w of [win, floatWin]) if (w && !w.isDestroyed() && w.webContents !== e.sender) w.webContents.send('windows:patch', patch)
+})
+const isFloat = (sender) => floatWin && !floatWin.isDestroyed() && sender === floatWin.webContents
+const mainAlive = () => win && !win.isDestroyed()
+
 // ── Menus ────────────────────────────────────────────────────────────────────────────────────
 
-function contextMenu(params) {
+function contextMenu(params, w) {
+  // Commands go to the window the menu is in.
+  const send = (command, arg) => w.webContents.send('menu', command, arg)
   const items = []
   if (params.misspelledWord) {
-    for (const s of params.dictionarySuggestions.slice(0, 6)) items.push({ label: s, click: () => win.webContents.replaceMisspelling(s) })
+    for (const s of params.dictionarySuggestions.slice(0, 6)) items.push({ label: s, click: () => w.webContents.replaceMisspelling(s) })
     if (!params.dictionarySuggestions.length) items.push({ label: 'No Guesses Found', enabled: false })
-    items.push({ label: 'Learn Spelling', click: () => win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord) }, { type: 'separator' })
+    items.push({ label: 'Learn Spelling', click: () => w.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord) }, { type: 'separator' })
   }
   if (params.isEditable) {
     items.push({ role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'pasteAndMatchStyle' }, { type: 'separator' })
@@ -162,8 +283,8 @@ function contextMenu(params) {
   } else if (params.selectionText) items.push({ role: 'copy' })
   if (params.linkURL && /^https?:/.test(params.linkURL)) items.push({ type: 'separator' }, { label: 'Open Link', click: () => shell.openExternal(params.linkURL) }, { label: 'Copy Link', click: () => require('electron').clipboard.writeText(params.linkURL) })
   // Notes' own lists and folders have their own menus.
-  if (items.length && params.isEditable) Menu.buildFromTemplate(items).popup({ window: win })
-  else if (items.length && params.selectionText) Menu.buildFromTemplate(items).popup({ window: win })
+  if (items.length && params.isEditable) Menu.buildFromTemplate(items).popup({ window: w })
+  else if (items.length && params.selectionText) Menu.buildFromTemplate(items).popup({ window: w })
 }
 
 // ── Keyboard shortcuts ───────────────────────────────────────────────────────────────────────
@@ -214,42 +335,50 @@ let capturing = false
 
 const keysFor = (id, def) => (Object.hasOwn(shortcutOverrides, id) ? normalizeKeys(shortcutOverrides[id]) : normalizeKeys(def))
 
-function onKey(e, input) {
+/** Commands the floating note runs itself; the rest of the menu's keys do nothing there. */
+const FLOAT_COMMANDS = new Set(['new-note', 'new-quick-note', 'close-note', 'bold', 'italic', 'underline', 'strike', 'highlight', 'checklist', 'check', 'table', 'link', 'indent', 'outdent', 'find', 'bigger', 'smaller', 'attach', 'align'])
+
+function onKey(e, input, where) {
   if (input.type !== 'keyDown') return
   const keys = keysOfInput(input)
   if (!keys) return
-  if (capturing) {
+  if (capturing && where === 'main') {
     // Settings → Shortcuts is waiting for new keys: they go to it, not to the menu or the note.
     e.preventDefault()
     if (!input.isAutoRepeat) win?.webContents.send('shortcut:captured', keys)
     return
   }
-  const run = bindings.get(keys)
-  if (run) {
+  const entry = bindings.get(keys)
+  if (!entry) return
+  if (where === 'float' && entry.command) {
+    if (!FLOAT_COMMANDS.has(entry.command) && !entry.command.startsWith('style:')) return
     e.preventDefault()
-    run()
+    floatWin.webContents.send('menu', entry.command, entry.arg)
+    return
   }
+  e.preventDefault()
+  entry.run()
 }
 
 let quickNoteOn = false
 let quickNoteKeys = ''
 function applyQuickNote() {
-  const entry = catalog.find((c) => c.id === 'global:quick-note')
+  const entry = catalog.find((c) => c.id === 'global:float-note')
   const want = quickNoteOn && !capturing ? (entry?.keys ?? '') : ''
   if (want === quickNoteKeys) return
   if (quickNoteKeys) globalShortcut.unregister(quickNoteKeys)
   quickNoteKeys = ''
   if (want) {
     try {
-      if (globalShortcut.register(want, () => send('new-quick-note'))) quickNoteKeys = want
+      if (globalShortcut.register(want, toggleFloat)) quickNoteKeys = want
     } catch {}
   }
 }
 
 function buildMenu() {
   // A menu item with keys (`sc` is taken out before the menu is built).
-  const item = (label, id, def, run) => ({ label, sc: { id, def, run }, click: run })
-  const cmd = (label, command, accelerator, arg) => item(label, arg ? `${command}:${arg}` : command, accelerator, () => send(command, arg))
+  const item = (label, id, def, run, command, arg) => ({ label, sc: { id, def, run, command, arg }, click: run })
+  const cmd = (label, command, accelerator, arg) => item(label, arg ? `${command}:${arg}` : command, accelerator, () => send(command, arg), command, arg)
   const focused = () => BrowserWindow.getFocusedWindow() ?? win
   const zoom = (by) => {
     const wc = focused()?.webContents
@@ -282,6 +411,7 @@ function buildMenu() {
       submenu: [
         cmd('New Note', 'new-note', 'CmdOrCtrl+N'),
         cmd('New Quick Note', 'new-quick-note'),
+        item('Floating Quick Note', 'float-note', '', toggleFloat),
         cmd('New Folder', 'new-folder', 'Shift+CmdOrCtrl+N'),
         cmd('New Smart Folder', 'new-smart-folder'),
         { type: 'separator' },
@@ -407,7 +537,7 @@ function buildMenu() {
   // Shortcuts without a menu item.
   const extra = [
     { id: 'new-note:tab', label: 'New Note (second shortcut)', group: 'File', def: 'CmdOrCtrl+T', run: () => send('new-note') },
-    { id: 'global:quick-note', label: 'New Quick Note from anywhere', group: 'Anywhere', def: 'Ctrl+Alt+N', global: true }
+    { id: 'global:float-note', label: 'Floating Quick Note', group: 'Anywhere', def: isMac ? 'Ctrl+CmdOrCtrl+N' : 'Ctrl+Alt+N', global: true }
   ]
   catalog = []
   bindings = new Map()
@@ -415,12 +545,12 @@ function buildMenu() {
     entry.keys = keysFor(entry.id, entry.def)
     entry.def = normalizeKeys(entry.def)
     catalog.push(entry)
-    if (entry.keys && !entry.global && !bindings.has(entry.keys)) bindings.set(entry.keys, entry.run)
+    if (entry.keys && !entry.global && !bindings.has(entry.keys)) bindings.set(entry.keys, entry)
   }
   const walk = (items, group) => {
     for (const it of items) {
       if (it.sc) {
-        add({ id: it.sc.id, label: it.label, group, def: it.sc.def, run: it.sc.run })
+        add({ id: it.sc.id, label: it.label, group, def: it.sc.def, run: it.sc.run, command: it.sc.command, arg: it.sc.arg })
         it.accelerator = keysFor(it.sc.id, it.sc.def) || undefined
         // Shown in the menu; onKey runs it (on Windows the menu would otherwise take the keys first).
         it.registerAccelerator = false
@@ -450,7 +580,12 @@ ipcMain.on('shortcuts:capture', (_e, on) => {
 ipcMain.on('version', (e) => (e.returnValue = version))
 ipcMain.on('translucency', (e) => (e.returnValue = translucency))
 
-ipcMain.handle('data:load', () => {
+ipcMain.handle('data:load', async (e) => {
+  // The floating note starts from what the main window has now (it may not be saved yet).
+  if (isFloat(e.sender) && mainAlive()) {
+    const snapshot = await win.webContents.executeJavaScript('window.__notesSnapshot?.() ?? null').catch(() => null)
+    if (snapshot) return snapshot
+  }
   for (const f of [DATA(), `${DATA()}.bak`]) {
     try {
       const text = fs.readFileSync(f, 'utf8')
@@ -462,7 +597,9 @@ ipcMain.handle('data:load', () => {
 })
 
 let lastBackup = 0
-ipcMain.handle('data:save', (_e, json) => {
+ipcMain.handle('data:save', (e, json) => {
+  // The main window has the floating note's changes too, and saves them.
+  if (isFloat(e.sender) && mainAlive()) return
   const file = DATA()
   fs.mkdirSync(path.dirname(file), { recursive: true })
   // A backup copy, at most every few minutes (saves come after every pause in typing).
@@ -725,9 +862,12 @@ app.whenReady().then(() => {
 async function screenshots(dir) {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms))
   fs.mkdirSync(dir, { recursive: true })
-  win.webContents.on('console-message', (e) => {
-    if (e.level === 'warning' || e.level === 'error') console.log(`[page ${e.level}] ${e.message}`)
-  })
+  const logs = (w) =>
+    w.webContents.on('console-message', (e) => {
+      if (e.level === 'warning' || e.level === 'error') console.log(`[page ${e.level}] ${e.message}`)
+    })
+  logs(win)
+  app.on('browser-window-created', (_e, w) => logs(w))
   await wait(3500)
   // Steps: "name:click,…", or JSON [[name, action, …], …] (easier with scripts in it).
   const raw = process.env.NOTES_SHOT_STEPS || 'home:'
@@ -738,7 +878,12 @@ async function screenshots(dir) {
         await wait(Number(text.slice(4)) || 1000)
         continue
       }
-      if (text.startsWith('key:')) {
+      if (text === 'focus:main' || text === 'focus:float') {
+        ;(text === 'focus:main' ? win : floatWin)?.focus()
+      } else if (text.startsWith('float!')) {
+        // Script in the floating note's window.
+        await floatWin?.webContents.executeJavaScript(text.slice(6)).catch((e) => console.log(`[step failed] ${e.message}`))
+      } else if (text.startsWith('key:')) {
         // "key:meta+t": a key press, as if typed (goes through before-input-event).
         const parts = text.slice(4).split('+')
         const keyCode = parts.pop()
@@ -762,7 +907,9 @@ async function screenshots(dir) {
       const b = win.getBounds()
       await new Promise((r) => execFile('/usr/sbin/screencapture', ['-x', '-o', `-R${b.x},${b.y},${b.width},${b.height}`, path.join(dir, `${name}.png`)], () => r()))
     } else {
-      const img = await win.webContents.capturePage()
+      // A name starting "float" is a picture of the floating note.
+      const target = name.startsWith('float') && floatWin && !floatWin.isDestroyed() ? floatWin : win
+      const img = await target.webContents.capturePage()
       fs.writeFileSync(path.join(dir, `${name}.png`), img.toPNG())
     }
     console.log('shot', name)

@@ -10,6 +10,7 @@ import { startSync, syncNow } from './lib/syncRunner'
 import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
 import { applyShortcuts } from './lib/shortcuts'
+import { startWindowSync } from './lib/windows'
 import { startUpdater } from './lib/updater'
 import { AttachmentsBrowser } from './ui/AttachmentsBrowser'
 import { runCommand } from './ui/commands'
@@ -112,6 +113,7 @@ export default function App() {
     desktop?.setQuickNoteShortcut(s.quickNoteShortcut)
     desktop?.setSpellcheck(s.spellcheck)
     void applyShortcuts()
+    startWindowSync()
     const offKeys = useStore.subscribe((st, prev) => st.settings.shortcuts !== prev.settings.shortcuts && void applyShortcuts())
     const off = desktop?.onMenu((cmd, arg) => runCommand(cmd, arg))
     const onCommand = (e: Event) => runCommand((e as CustomEvent<string>).detail)

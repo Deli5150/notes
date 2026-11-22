@@ -42,6 +42,11 @@ features and build commands.
   see-through (macOS vibrancy, Windows 11 Mica) when `translucent` is on. A theme with `style`
   (Nothing, Pixel) also sets `<html data-style>`, and app.css's "Theme looks" section changes its
   fonts and shapes (Doto + Space Mono, Google Sans Flex; all bundled from @fontsource).
+- Floating Quick Note: main.cjs `createFloat` opens the page with #float (src/ui/FloatingNote.tsx).
+  Each window keeps its own store and sends the other its changes (src/lib/windows.ts, relayed by
+  main); only the main window saves, and the float starts from its snapshot. Menu keys pressed in
+  the float go to it only for FLOAT_COMMANDS. Test hook: steps "float!<js>", "focus:main|float",
+  and shot names starting "float" capture that window.
 - Shortcuts: main.cjs owns them (every menu item made with `cmd`/`item`, plus `extra`). The menu only
   shows the keys; `onKey` (before-input-event) runs them on both platforms, before the page. Changed
   keys live in `settings.shortcuts` (per device, not synced) and go to main through `applyShortcuts`
