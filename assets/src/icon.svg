@@ -1,35 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <defs>
-    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#f1f0ec"/>
-    </linearGradient>
-    <linearGradient id="band" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffe066"/>
-      <stop offset="0.55" stop-color="#ffc21a"/>
-      <stop offset="1" stop-color="#f5a300"/>
-    </linearGradient>
-    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#000" stop-opacity="0.16"/>
-      <stop offset="1" stop-color="#000" stop-opacity="0"/>
-    </linearGradient>
-    <clipPath id="clip"><rect width="1024" height="1024" rx="230"/></clipPath>
-  </defs>
-  <g clip-path="url(#clip)">
-    <rect width="1024" height="1024" fill="url(#paper)"/>
-    <rect width="1024" height="300" fill="url(#band)"/>
-    <rect y="300" width="1024" height="34" fill="url(#shade)"/>
-    <g fill="#f1f0ec">
-      <circle cx="152" cy="300" r="15"/><circle cx="272" cy="300" r="15"/><circle cx="392" cy="300" r="15"/><circle cx="512" cy="300" r="15"/><circle cx="632" cy="300" r="15"/><circle cx="752" cy="300" r="15"/><circle cx="872" cy="300" r="15"/>
-    </g>
-    <g stroke="#d6d4cd" stroke-width="10" stroke-linecap="round">
-      <line x1="300" y1="470" x2="880" y2="470"/>
-      <line x1="300" y1="620" x2="880" y2="620"/>
-      <line x1="144" y1="770" x2="880" y2="770"/>
-      <line x1="144" y1="905" x2="700" y2="905"/>
-    </g>
-    <circle cx="190" cy="448" r="50" fill="#ffc21a"/>
-    <path d="M166 448 l18 19 l33 -37" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="190" cy="598" r="46" fill="none" stroke="#c9c6bd" stroke-width="10"/>
-  </g>
-</svg>
+<defs><clipPath id="c"><rect width="1024" height="1024" rx="230"/></clipPath>
+<filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#000" flood-opacity="0.35"/></filter></defs>
+<g clip-path="url(#c)"><rect width="1024" height="1024" fill="#2b2b2d"/><g filter="url(#s)"><path d="M356 252 H668 A104 104 0 0 1 772 356 V622 L622 772 H356 A104 104 0 0 1 252 668 V356 A104 104 0 0 1 356 252 Z" fill="#fff"/></g>
+<path d="M772 622 L622 772 V658.4 A36.4 36.4 0 0 1 658.4 622 Z" fill="#d9d9d9"/></g></svg>
