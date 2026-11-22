@@ -65,7 +65,7 @@ features and build commands.
   Icons from assets/src/icon.svg by `npm run icons` (adaptive icon too). Google sign-in: Google's
   Android authorization API (`googleAuthorize`, play-services-auth) gives drive.appdata access
   tokens; it needs Android OAuth clients (package app.notes.android + the release and debug key
-  SHA-1s) in the Cloud project, no secret. Updater: src/lib/updater.ts checks GitHub for
+  SHA-1s; "Notes Android (release)" and "(debug)" exist in notes-515500 since 2026-11-22), no secret. Updater: src/lib/updater.ts checks GitHub for
   `Notes-<v>.apk`, `downloadUpdate`/`installUpdate` in the plugin (SHA-256 checked, FileProvider,
   "Install unknown apps" the first time); same sheet as the desktop. Debug builds allow cleartext
   (app/src/debug) for testing it against a local server. Not done yet: Generate title beyond basic. Screenshots: a debug APK lets Chrome DevTools in
