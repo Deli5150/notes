@@ -848,6 +848,8 @@ app.on('window-all-closed', () => {
 })
 
 app.whenReady().then(() => {
+  // While developing, the Dock shows Notes' own icon (a built app has it in its bundle).
+  if (isMac && !app.isPackaged) app.dock?.setIcon(path.join(__dirname, 'build', 'icon.png'))
   app.setAppUserModelId('app.notes.desktop')
   serve()
   // The camera and microphone (scans, recordings) and the fonts on this computer (the Aa panel).
