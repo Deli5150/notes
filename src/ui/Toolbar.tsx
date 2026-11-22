@@ -1,5 +1,5 @@
 import { useEditorState } from '@tiptap/react'
-import { ALargeSmall, AudioLines, Inbox, ListChecks, Lock, LockOpen, MoreHorizontal, Paperclip, PanelLeft, Share, SquarePen, Table } from 'lucide-react'
+import { ChevronLeft, ALargeSmall, AudioLines, Inbox, ListChecks, Lock, LockOpen, MoreHorizontal, Paperclip, PanelLeft, Share, SquarePen, Table } from 'lucide-react'
 import { listDate } from '../lib/dates'
 import { FolderGlyph } from './FolderIcon'
 import { useState } from 'react'
@@ -27,6 +27,7 @@ import {
   toggleLock
 } from './actions'
 import { withKeys } from '../lib/shortcuts'
+import { backToList, isPhone } from '../lib/phone'
 import { FormatPanel } from './FormatPanel'
 import { menuUnder, type MenuItem } from './overlays'
 
@@ -83,9 +84,15 @@ export function Toolbar() {
   const inChecklist = useEditorState({ editor, selector: ({ editor: e }) => Boolean(e?.isActive('taskList')) })
   const noteEditable = Boolean(editor && note && !note.deletedAt)
 
+  const phone = isPhone()
   return (
     <div className={`toolbar${note ? '' : ' is-empty'}`}>
-      {sidebarHidden && (
+      {phone && (
+        <button className="tb-btn phone-back" aria-label="Back to notes" onClick={backToList}>
+          <ChevronLeft size={22} />
+        </button>
+      )}
+      {sidebarHidden && !phone && (
         <>
           <button className="tb-btn" title={withKeys('Show Sidebar', 'sidebar')} onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>
             <PanelLeft size={16} />

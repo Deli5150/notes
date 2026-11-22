@@ -12,6 +12,7 @@ The first release of Notes, for Mac and Windows.
 - Collapsible sections, Lines & Grids, links between notes (type >>), find & replace
 - Locked notes with one password, and Touch ID on Macs
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
+- Android app (early version): the same Notes on your phone, with a phone layout (the list, then the note full screen) and the back button
 - Nothing theme: notes in the sidebar sit on solid cards, so they’re easy to read over the dot grid
 - Note previews in the list show the body again for notes with a title
 - Settings → Import shows each app’s own icon

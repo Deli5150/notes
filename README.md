@@ -2,9 +2,30 @@
 
 # Notes
 
-A notes app with an Arc-inspired look, for **macOS** and **Windows** (Android next): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
+A notes app with an Arc-inspired look, for **macOS**, **Windows** and **Android** (Android is an early version): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
 
 **[Download the latest release](https://github.com/Deli5150/notes/releases/latest)** · [Website](https://deli5150.github.io/notes/) · [Report a bug or request a feature](https://github.com/Deli5150/notes/issues/new/choose)
+
+## Screenshots
+
+### Mac and Windows
+
+<p align="center"><img src="docs/screenshots/desktop-light.png" alt="Notes on the Mac: folders as pinned tiles, the note list and a note"></p>
+
+<p align="center">
+  <img src="docs/screenshots/desktop-dark.png" width="49%" alt="The Pixel theme in dark mode">
+  <img src="docs/screenshots/desktop-nothing.png" width="49%" alt="The Nothing theme">
+</p>
+
+### Android
+
+<p align="center">
+  <img src="docs/screenshots/android-list.png" width="19%" alt="Notes list on Android">
+  <img src="docs/screenshots/android-note.png" width="19%" alt="A note on Android">
+  <img src="docs/screenshots/android-dark.png" width="19%" alt="The Nothing theme on Android">
+  <img src="docs/screenshots/android-pixel.png" width="19%" alt="A checklist in the Pixel theme on Android">
+  <img src="docs/screenshots/android-settings.png" width="19%" alt="Themes in Settings on Android">
+</p>
 
 ## Features
 
@@ -29,6 +50,8 @@ npm install
 npm run dev            # live-reloading desktop app with its own data (.dev-data/)
 npm run typecheck && npm test
 npm run dist:desktop   # dist/Notes-<version>.dmg, -mac.zip, Notes-Setup-<version>.exe
+npm run android        # dist/Notes-<version>.apk, signed (needs the Android SDK and Java 21)
+npm run android:install  # …and installs it on the connected phone or emulator
 npm run release        # publishes a GitHub release with those files and the CHANGELOG section
 ```
 

@@ -1,11 +1,15 @@
-import { ChevronLeft } from 'lucide-react'
+import { App as CapApp } from '@capacitor/app'
+import { ChevronLeft, SquarePen } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NotePane, useEditorRef } from './editor/Editor'
 import { applyImport, importFiles } from './import'
 import * as exporter from './lib/export'
 import * as lock from './lib/lock'
 import { dropIfBlank, flushSave, useStore } from './lib/store'
-import { desktop, isMac } from './lib/storage'
+import { paintBars } from './lib/android'
+import { backToList, usePhone } from './lib/phone'
+import { desktop, isAndroid, isMac } from './lib/storage'
+import { newNote } from './ui/actions'
 import { startSync, syncNow } from './lib/syncRunner'
 import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
@@ -82,6 +86,9 @@ export default function App() {
   const noteId = useUi((s) => s.noteId)
   const galleryOpen = useUi((s) => s.galleryOpen)
   const browser = useUi((s) => s.attachmentsBrowser)
+  const phone = usePhone()
+  const phoneNote = useUi((s) => s.phoneNote)
+  const settingsOpen = useUi((s) => Boolean(s.settings))
   const [, setDarkTick] = useState(0)
 
   useEffect(() => {
@@ -89,11 +96,14 @@ export default function App() {
     startUpdater()
   }, [])
 
-  // Theme: CSS variables, and the window's own colours (title bar on Windows, see-through sidebar).
+  // Theme: CSS variables, and the window's own colours (title bar on Windows, see-through sidebar,
+  // Android's status and navigation bars).
   useEffect(() => {
     const apply = () => {
       const p = applyTheme(themeId, appearance, translucent && Boolean(desktop?.translucency))
-      desktop?.setChrome({ bg: p.bg, fg: p.text, dark: document.documentElement.dataset.theme === 'dark', translucent })
+      const dark = document.documentElement.dataset.theme === 'dark'
+      paintBars(p, dark, phone && (phoneNote || settingsOpen) ? 'note' : 'list')
+      desktop?.setChrome({ bg: p.bg, fg: p.text, dark, translucent })
     }
     apply()
     const mq = matchMedia('(prefers-color-scheme: dark)')
@@ -103,7 +113,7 @@ export default function App() {
     }
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
-  }, [themeId, appearance, translucent])
+  }, [themeId, appearance, translucent, phone, phoneNote, settingsOpen, loaded])
 
   useEffect(() => {
     if (!loaded) return
@@ -114,6 +124,17 @@ export default function App() {
     desktop?.setSpellcheck(s.spellcheck)
     void applyShortcuts()
     startWindowSync()
+    // Android's back button (or gesture): close what's on top, then back to the list, then out.
+    const back = isAndroid
+      ? CapApp.addListener('backButton', () => {
+          const ui = useUi.getState()
+          if (document.querySelector('.menu, .dialog')) dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+          else if (ui.settings) useUi.setState({ settings: null })
+          else if (ui.findOpen) useUi.setState({ findOpen: false })
+          else if (ui.phoneNote) backToList()
+          else void CapApp.minimizeApp()
+        })
+      : null
     // Empty notes don't stay (hydrate drops any from before): each one goes as it's closed or left. Not the
     // one the floating note has open (it does its own).
     const floating = () => {
@@ -145,6 +166,7 @@ export default function App() {
     window.addEventListener('pagehide', onHide)
     return () => {
       off?.()
+      void back?.then((h) => h.remove())
       offKeys()
       offLeave()
       window.removeEventListener('notes:command', onCommand)
@@ -157,11 +179,11 @@ export default function App() {
   if (!loaded) return <div className="app is-loading" />
 
   const setSettings = useStore.getState().setSettings
-  const platform = desktop ? `is-${desktop.platform}` : 'is-web'
+  const platform = desktop ? `is-${desktop.platform}` : isAndroid ? 'is-android' : 'is-web'
 
   let main: React.ReactNode
   if (browser) main = <AttachmentsBrowser />
-  else if (view === 'gallery' && !galleryOpen) main = <Gallery />
+  else if (view === 'gallery' && !galleryOpen && !phone) main = <Gallery />
   else
     main = (
       <>
@@ -173,6 +195,29 @@ export default function App() {
         <Toolbar />
         <NotePane noteId={noteId} />
       </>
+    )
+
+  // A phone shows one screen at a time: the list (the sidebar), or the open note.
+  if (phone)
+    return (
+      <div className={`app ${platform} is-phone`}>
+        {phoneNote && noteId ? (
+          <main className="stage">
+            <div className="card">{main}</div>
+          </main>
+        ) : (
+          <>
+            <Sidebar width={0} onSettings={() => useUi.setState({ settings: 'general' })} onFeedback={() => useUi.setState({ settings: 'feedback' })} />
+            <button className="phone-fab" aria-label="New Note" onClick={() => newNote()}>
+              <SquarePen size={22} />
+            </button>
+          </>
+        )}
+        <SettingsWindow />
+        <UpdateSheet />
+        <OverlayHost />
+        <ToastHost />
+      </div>
     )
 
   return (

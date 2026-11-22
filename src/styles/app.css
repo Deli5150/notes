@@ -2527,3 +2527,146 @@ body.is-float-window {
 .float .title-field {
   margin: 2px 0 6px;
 }
+
+/* ── Phones (src/lib/phone.ts): the list, then the note full screen ─────────────────────────── */
+
+.app.is-phone {
+  /* Capacitor fills --safe-area-inset-* in on Android; env() elsewhere. */
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  font-size: 14px;
+}
+
+.is-phone .sidebar {
+  flex: 1;
+  width: 100%;
+  padding: var(--safe-top) 12px var(--safe-bottom);
+}
+
+.is-phone .sidebar-top {
+  height: 52px;
+}
+
+.is-phone .sidebar-hide {
+  display: none;
+}
+
+.is-phone .search-field {
+  height: 40px;
+  font-size: 15px;
+}
+
+.is-phone .note-row {
+  padding: 11px 12px;
+}
+
+.is-phone .note-row-title {
+  font-size: 15px;
+}
+
+.is-phone .note-row-snippet {
+  font-size: 13px;
+}
+
+.is-phone .sidebar-bottom {
+  padding-bottom: 8px;
+}
+
+.phone-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(64px + var(--safe-bottom));
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+  z-index: 50;
+}
+
+.phone-fab:active {
+  transform: scale(0.95);
+}
+
+.is-phone .stage {
+  padding: 0;
+}
+
+.is-phone .card {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.is-phone .toolbar {
+  padding-top: var(--safe-top);
+  height: calc(var(--toolbar-h) + var(--safe-top));
+  gap: 2px;
+}
+
+.is-phone .toolbar .crumb-date,
+.is-phone .toolbar .crumb-sep {
+  display: none;
+}
+
+.is-phone .toolbar .tb-btn {
+  min-width: 36px;
+  height: 36px;
+}
+
+.is-phone .phone-back {
+  margin-left: -4px;
+}
+
+.is-phone .editor-scroll {
+  padding: 8px 18px calc(120px + var(--safe-bottom));
+}
+
+/* Settings fill the screen, with the pages as a row of chips at the top. */
+.is-phone .scrim {
+  place-items: stretch;
+}
+
+.is-phone .settings {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  flex-direction: column;
+  padding-top: var(--safe-top);
+}
+
+.is-phone .settings-nav {
+  width: auto;
+  flex-direction: row;
+  overflow-x: auto;
+  padding: 8px 10px;
+  gap: 4px;
+  scrollbar-width: none;
+}
+
+.is-phone .settings-nav-title,
+.is-phone .settings-nav-foot {
+  display: none;
+}
+
+.is-phone .settings-nav-item {
+  flex: none;
+  height: 34px;
+  white-space: nowrap;
+}
+
+.is-phone .settings-body {
+  flex: 1;
+  padding-bottom: var(--safe-bottom);
+}
+
+.is-phone .settings-body {
+  padding: 0 16px calc(20px + var(--safe-bottom));
+}
+
+/* Too narrow for the folder and date beside the tools: Move is in the ••• menu. */
+.is-phone .toolbar .crumb {
+  display: none;
+}

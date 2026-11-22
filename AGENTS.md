@@ -1,14 +1,14 @@
 # Notes
 
-A notes app inspired by Apple Notes, for macOS and Windows; Android next. See README.md for
+A notes app for macOS, Windows and Android. See README.md for
 features and build commands.
 
 ## Architecture decisions
 
 - The app is a plain React web build (`src/`, Vite → `desktop/web`) in an Electron shell
   (`desktop/`, plain CommonJS, served over `app://`). Not Expo/React Native like the user's other
-  apps: a rich-text editor works far better in the DOM. Android will wrap the same build (e.g.
-  Capacitor) with its own storage bridge; keep platform code behind `src/lib/storage.ts`.
+  apps: a rich-text editor works far better in the DOM. Android wraps the same build in Capacitor
+  (below); keep platform code behind `src/lib/storage.ts`.
 - Editor: TipTap 3 (`src/editor/`). `setup.ts` lists the extensions; `extensions.ts` has Notes'
   own (collapsible headings via a `collapsed` heading attr + decorations, dashed lists, indent,
   checklist sorting, #tag decorations, Math Notes, find & replace). Everything that isn't text is
@@ -54,6 +54,21 @@ features and build commands.
   desktop the editor's own format keys are off (setup.ts MENU_KEYS) so a moved shortcut really moves.
 - Titles: desktop/native/titles.swift (Apple's on-device model) is built by scripts/native.mjs into
   desktop/bin/notes-titles and shipped as an extraResource on the Mac.
+- Android (started 2026-11-22): Capacitor 8 around the same web build (`capacitor.config.ts`,
+  webDir desktop/web; `android/` is committed). `npm run android` → signed dist/Notes-<v>.apk
+  (scripts/android.mjs; Java 21 from Homebrew openjdk@21; key in credentials/, passwords as
+  NOTES_RELEASE_* in ~/.gradle/gradle.properties like the user's other apps; versionCode from
+  package.json). Data: notes.json via @capacitor/filesystem (storage.ts, `isAndroid`), attachments
+  in IndexedDB. Phones (≤700px, src/lib/phone.ts) show one screen at a time: the sidebar, then the
+  note (`ui.phoneNote`, back button / `backToList`); tablets keep the desktop layout. Native bits:
+  NotesNativePlugin.java (window colour + bar icons behind the status/navigation bars, src/lib/android.ts).
+  Icons from assets/src/icon.svg by `npm run icons` (adaptive icon too). Not done yet on Android:
+  Google sign-in (needs an Android OAuth client + SHA-1), the APK updater sheet (port the user's standard
+  one from ~/streamhub/mobile/src/ui/UpdateSheet.tsx), Generate title beyond basic. Screenshots: a debug APK lets Chrome DevTools in
+  (`adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>`), then `window.__notes`.
+- README screenshots live in docs/screenshots (desktop from the NOTES_SHOTS hook with
+  `--force-device-scale-factor=2`; Android from `adb exec-out screencap`), made from sample notes,
+  never the user's.
 - Commands: the native menu (main.cjs `buildMenu`) sends names to `src/ui/commands.ts`; in a
   plain browser App.tsx maps shortcuts to the same names.
 - Importers (`src/import/`): each app's export format → HTML run through the editor's schema

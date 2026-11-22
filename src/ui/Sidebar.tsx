@@ -353,10 +353,10 @@ export function Sidebar({ width, onSettings, onFeedback }: { width: number; onSe
   const trashOn = useUi((s) => s.source.kind === 'trash')
 
   return (
-    <aside className="sidebar" style={{ width }}>
+    <aside className="sidebar" style={width ? { width } : undefined}>
       <div className="sidebar-top">
         <span className="tb-flex" />
-        <button className="tb-btn" title={withKeys('Hide Sidebar', 'sidebar')} onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
+        <button className="tb-btn sidebar-hide" title={withKeys('Hide Sidebar', 'sidebar')} onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
           <PanelLeftClose size={16} />
         </button>
         <button className="tb-btn" title={withKeys('New Note', 'new-note:tab')} onClick={() => newNote()}>

@@ -8,7 +8,7 @@ import { feedbackUrl, type FeedbackKind } from '../lib/feedback'
 import { googleAvailable } from '../lib/google'
 import { changePassword, lockNow, resetPassword, useLock } from '../lib/lock'
 import { RELEASES_PAGE, REPO_URL } from '../lib/release'
-import { desktop, isMac, openExternal } from '../lib/storage'
+import { desktop, isAndroid, isMac, openExternal } from '../lib/storage'
 import { useStore } from '../lib/store'
 import { syncNow, turnOffSync, turnOnSync, useSyncState } from '../lib/syncRunner'
 import { THEMES } from '../lib/themes'
@@ -541,7 +541,7 @@ function SyncPage() {
             </Row>
           </>
         ) : (
-          <Row label="Sync is off" sub={available ? 'Sign in with your Google account to start.' : 'This copy of Notes wasn’t built with a Google client, so it can’t sign in.'}>
+          <Row label="Sync is off" sub={available ? 'Sign in with your Google account to start.' : isAndroid ? 'Signing in to Google on Android is coming in a later version.' : 'This copy of Notes wasn’t built with a Google client, so it can’t sign in.'}>
             <button
               className="btn btn-primary"
               disabled={!available || working}

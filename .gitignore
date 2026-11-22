@@ -13,4 +13,3 @@ credentials/
 *.ipa
 .DS_Store
 .dev-data/
-/android/

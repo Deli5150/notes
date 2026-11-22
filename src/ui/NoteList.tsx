@@ -200,7 +200,9 @@ export function NoteList() {
   const onPick = (e: React.MouseEvent, id: string) => {
     if (e.button !== 0) return
     useUi.setState({ focus: 'list' })
-    useUi.getState().open(id, e.metaKey || e.ctrlKey ? 'toggle' : e.shiftKey ? 'range' : null, flatIds)
+    const extend = e.metaKey || e.ctrlKey ? 'toggle' : e.shiftKey ? 'range' : null
+    useUi.getState().open(id, extend, flatIds)
+    if (!extend) useUi.setState({ phoneNote: true })
   }
   const onMenu = (e: React.MouseEvent, id: string) => {
     e.preventDefault()

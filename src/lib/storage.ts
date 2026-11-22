@@ -1,8 +1,11 @@
+import { Capacitor } from '@capacitor/core'
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem'
 import type { UpdateStatus } from './release'
 
 // Where Notes keeps its data: on desktop, a JSON file and an attachments folder in the app's data
-// folder (through the Electron preload's bridge, desktop/preload.cjs); in a plain browser (and the
-// Android app until it has its own bridge), localStorage and IndexedDB.
+// folder (through the Electron preload's bridge, desktop/preload.cjs); on Android, a JSON file in
+// the app's storage (Capacitor Filesystem) and IndexedDB; in a plain browser, localStorage and
+// IndexedDB.
 
 export interface FetchInit {
   method?: string
@@ -97,17 +100,46 @@ export interface DesktopBridge {
 
 export const desktop: DesktopBridge | null = typeof window !== 'undefined' ? ((window as unknown as { notesApp?: DesktopBridge }).notesApp ?? null) : null
 
+/** The Android app (Capacitor around this same web build). */
+export const isAndroid = Capacitor.getPlatform() === 'android'
+
 export const isMac = desktop ? desktop.platform === 'darwin' : typeof navigator !== 'undefined' && /Mac/.test(navigator.platform)
 
 const KEY = 'notes:data'
 
+// On Android the notes are a file in the app's own storage (with a .bak copy), not localStorage,
+// which only holds a few megabytes.
+const FILE = 'notes.json'
+
+async function readFile(path: string): Promise<string | null> {
+  try {
+    const r = await Filesystem.readFile({ path, directory: Directory.Data, encoding: Encoding.UTF8 })
+    const text = typeof r.data === 'string' ? r.data : await r.data.text()
+    JSON.parse(text)
+    return text
+  } catch {
+    return null
+  }
+}
+
 export async function loadData(): Promise<string | null> {
   if (desktop) return desktop.load()
+  if (isAndroid) return (await readFile(FILE)) ?? (await readFile(`${FILE}.bak`))
   return localStorage.getItem(KEY)
 }
 
+let lastBackup = 0
 export async function saveData(json: string): Promise<void> {
   if (desktop) return desktop.save(json)
+  if (isAndroid) {
+    // A backup copy, at most every few minutes.
+    if (Date.now() - lastBackup > 5 * 60_000) {
+      await Filesystem.copy({ from: FILE, to: `${FILE}.bak`, directory: Directory.Data }).catch(() => {})
+      lastBackup = Date.now()
+    }
+    await Filesystem.writeFile({ path: FILE, data: json, directory: Directory.Data, encoding: Encoding.UTF8 })
+    return
+  }
   localStorage.setItem(KEY, json)
 }
 
@@ -148,6 +180,18 @@ export const attachmentStore = desktop?.attachments ?? browserAttachments
 /** Saves a file the user asked for (desktop: a save dialog; browser: a download). */
 export async function saveFileAs(name: string, data: string | Uint8Array, mime = 'application/octet-stream'): Promise<boolean> {
   if (desktop) return desktop.saveFile(name, data)
+  if (isAndroid) {
+    // Android: hand the file to the share sheet (Save to Files, Drive, send it…).
+    const { Share } = await import('@capacitor/share')
+    const base64 = typeof data === 'string' ? btoa(unescape(encodeURIComponent(data))) : btoa(Array.from(data, (b) => String.fromCharCode(b)).join(''))
+    const { uri } = await Filesystem.writeFile({ path: name, data: base64, directory: Directory.Cache })
+    try {
+      await Share.share({ title: name, files: [uri] })
+      return true
+    } catch {
+      return false
+    }
+  }
   const blob = new Blob([typeof data === 'string' ? data : (data as BlobPart)], { type: mime })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)

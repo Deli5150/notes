@@ -42,6 +42,7 @@ export function newNote(folderId = targetFolder(), html?: string): Note {
   const note = useStore.getState().createNote(folderId, start)
   useUi.setState({ search: '', searching: false, galleryOpen: useStore.getState().settings.view === 'gallery' })
   ui.open(note.id)
+  useUi.setState({ phoneNote: true })
   return note
 }
 

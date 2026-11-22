@@ -24,6 +24,8 @@ interface UiState {
   findOpen: boolean
   /** The open note was closed (⌘W), so the list doesn't open another one by itself. */
   closed: boolean
+  /** On a phone: the open note is on screen (else the list). */
+  phoneNote: boolean
   close(): void
   select(source: Source): void
   open(id: string | null, extend?: 'toggle' | 'range' | null, list?: string[]): void
@@ -42,8 +44,9 @@ export const useUi = create<UiState>((set, get) => ({
   renaming: null,
   findOpen: false,
   closed: false,
+  phoneNote: false,
   close() {
-    set({ noteId: null, selected: [], galleryOpen: false, findOpen: false, closed: true })
+    set({ noteId: null, selected: [], galleryOpen: false, findOpen: false, closed: true, phoneNote: false })
   },
   select(source) {
     set({ source, closed: false, galleryOpen: false, attachmentsBrowser: false, search: '', searching: false })
