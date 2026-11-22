@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { buildNative } from './native.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const url = 'http://localhost:5183'
@@ -16,6 +17,7 @@ const dotenv = Object.fromEntries(
     .map((m) => [m[1], m[2]])
 )
 
+buildNative()
 const server = spawn('npx', ['vite'], { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] })
 for (let i = 0; i < 120; i++) {
   try {

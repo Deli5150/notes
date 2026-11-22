@@ -54,7 +54,10 @@ export function normalize(raw: Partial<AppData>): AppData {
       attachments: Array.isArray(n.attachments) ? n.attachments : [],
       hasChecklist: Boolean(n.hasChecklist)
     }))
-  return { version: 1, folders, notes, settings: { ...DEFAULT_SETTINGS, ...(raw.settings ?? {}) } }
+  const settings = { ...DEFAULT_SETTINGS, ...(raw.settings ?? {}) }
+  // 'local' was the old default, from before titles could come from Apple Intelligence.
+  if ((settings.titleEngine as string) === 'local') settings.titleEngine = 'auto'
+  return { version: 1, folders, notes, settings }
 }
 
 /** Notes from before the title field: their first heading becomes the title. */

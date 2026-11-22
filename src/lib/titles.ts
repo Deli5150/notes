@@ -1,6 +1,8 @@
-// "Generate title" without a network: a short title from what the note is about. The words used
-// most (leaving out common ones), in the order the note first uses them; a short first line is
-// taken as it is. With an Anthropic API key, Claude writes the title instead (desktop/ai.cjs).
+// "Generate title". A language model reads the whole note and sums it up: Apple's on-device model on
+// a Mac with Apple Intelligence, or Claude with an Anthropic API key (desktop/ai.cjs). Without
+// either, a basic title from the note's words: the ones used most (leaving out common ones), in
+// the order the note first uses them; a short first line is taken as it is.
+import type { TitleEngine } from './types'
 
 const STOP = new Set(
   `a an and are as at be been but by can could did do does for from had has have he her here him his how i if in into is it its just like me more most my no not of on or our out so some than that the their them then there these they this to too up us was we were what when where which who will with would you your yours am also about after again all any because before being both each few further get got having just let make many may might much must nor now off once only other over own same she should since such through under until very via while why yet go going one two new note notes need needs thing things really want lot today tomorrow yesterday buy remember call check use see think know take put keep look try add cheaper better good great`.split(
@@ -46,9 +48,13 @@ export function localTitle(text: string): string {
   return titleCase(joined)
 }
 
-/** Suggests a title for a note's text: with Claude when it's set up on this computer, else locally. */
-export async function generateTitle(text: string, engine: 'local' | 'claude'): Promise<string> {
+/** Suggests a title for a note's text, with the engine chosen in Settings → Text. */
+export async function generateTitle(text: string, engine: TitleEngine): Promise<string> {
   const { desktop } = await import('./storage')
-  if (engine === 'claude' && desktop && (await desktop.ai.hasKey())) return desktop.ai.title(text)
+  if (!desktop || engine === 'basic') return localTitle(text)
+  if (engine === 'apple') return desktop.ai.appleTitle(text)
+  if (engine === 'claude') return desktop.ai.title(text)
+  if ((await desktop.ai.appleAvailable()) === true) return desktop.ai.appleTitle(text)
+  if (await desktop.ai.hasKey()) return desktop.ai.title(text)
   return localTitle(text)
 }

@@ -37,7 +37,9 @@ contextBridge.exposeInMainWorld('notesApp', {
   ai: {
     hasKey: () => ipcRenderer.invoke('ai:has-key'),
     setKey: (key) => ipcRenderer.invoke('ai:set-key', key),
-    title: (text) => ipcRenderer.invoke('ai:title', text)
+    title: (text) => ipcRenderer.invoke('ai:title', text),
+    appleAvailable: () => ipcRenderer.invoke('ai:apple-available'),
+    appleTitle: (text) => ipcRenderer.invoke('ai:apple-title', text)
   },
   google: {
     configured: ipcRenderer.sendSync('google:configured'),

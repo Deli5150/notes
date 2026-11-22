@@ -54,6 +54,9 @@ export interface DesktopBridge {
     hasKey(): Promise<boolean>
     setKey(key: string | null): Promise<void>
     title(text: string): Promise<string>
+    /** true, or why Apple Intelligence can't be used. */
+    appleAvailable(): Promise<true | string>
+    appleTitle(text: string): Promise<string>
   }
   google: {
     configured: boolean

@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarHidden: false,
   collapsedFolders: [],
   foldersCollapsed: false,
-  titleEngine: 'local'
+  titleEngine: 'auto'
 }
 
 export const systemFolders = (now = Date.now()): Folder[] => [

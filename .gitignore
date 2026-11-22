@@ -3,6 +3,7 @@ node_modules/
 desktop/web/
 desktop/google.json
 desktop/node_modules/
+desktop/bin/
 desktop/build/icon.iconset/
 .env
 .env.local

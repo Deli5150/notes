@@ -14,7 +14,7 @@ import { syncNow, turnOffSync, turnOnSync, useSyncState } from '../lib/syncRunne
 import { THEMES } from '../lib/themes'
 import { useUi, type SettingsPage } from '../lib/ui'
 import { checkForUpdates, downloadUpdate, installUpdate, useUpdate } from '../lib/updater'
-import type { AppData, MathResults, Paper, Settings as SettingsT, SortBy, StartWith } from '../lib/types'
+import type { AppData, MathResults, Paper, Settings as SettingsT, SortBy, StartWith, TitleEngine } from '../lib/types'
 import { VERSION } from '../version'
 import { applyImport, importAppleNotes, importFiles } from '../import'
 import { ALT, MOD, PAPERS, setupPassword, SHIFT } from './actions'
@@ -304,11 +304,13 @@ function TextPage() {
 function TitlesGroup() {
   const engine = useStore((s) => s.settings.titleEngine)
   const [hasKey, setHasKey] = useState<boolean | null>(null)
+  const [apple, setApple] = useState<true | string | null>(null)
   const [key, setKey] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   useEffect(() => {
     void desktop?.ai.hasKey().then(setHasKey)
+    void desktop?.ai.appleAvailable().then(setApple)
   }, [])
   if (!desktop) return null
   const save = async () => {
@@ -333,14 +335,16 @@ function TitlesGroup() {
   return (
     <Group
       title="Generate title"
-      footer="When a note has no title, the ✨ Generate title button under the title field suggests one from the whole note. On this computer, Notes picks the note’s main words. With Claude, the note’s text is sent to Anthropic with your own API key (from console.anthropic.com), which is kept encrypted on this computer and never synced."
+      footer="When a note has no title, the ✨ Generate title button under the title field reads the whole note and sums it up in a title. Apple Intelligence runs on your Mac, so the note never leaves it. With Claude, the note’s text is sent to Anthropic with your own API key (from console.anthropic.com), which is kept encrypted on this computer and never synced. Basic titles only pick out the note’s main words."
     >
-      <Row label="Write titles with">
-        <Select<'local' | 'claude'>
-          value={engine === 'claude' && hasKey ? 'claude' : 'local'}
+      <Row label="Write titles with" sub={engine === 'apple' && apple !== true && apple ? apple : engine === 'auto' ? `Now: ${apple === true ? 'Apple Intelligence' : hasKey ? 'Claude' : 'basic titles'}` : undefined}>
+        <Select<TitleEngine>
+          value={engine === 'claude' && !hasKey ? 'auto' : engine}
           options={[
-            ['local', 'This computer (basic)'],
-            ['claude', hasKey ? 'Claude' : 'Claude (add a key below)']
+            ['auto', 'Automatic'],
+            ...(isMac ? [['apple', apple === true ? 'Apple Intelligence (on this Mac)' : 'Apple Intelligence (not available)'] as [TitleEngine, string]] : []),
+            ['claude', hasKey ? 'Claude' : 'Claude (add a key below)'],
+            ['basic', 'Basic (main words)']
           ]}
           onChange={(v) => set({ titleEngine: v })}
         />
@@ -352,7 +356,7 @@ function TitlesGroup() {
             onClick={async () => {
               await desktop!.ai.setKey(null)
               setHasKey(false)
-              set({ titleEngine: 'local' })
+              if (engine === 'claude') set({ titleEngine: 'auto' })
             }}
           >
             Remove Key

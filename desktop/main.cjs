@@ -575,6 +575,8 @@ ipcMain.handle('google:fetch-bytes', (_e, url, init) => google.authFetchBytes(ur
 ipcMain.handle('ai:has-key', () => ai.hasKey())
 ipcMain.handle('ai:set-key', (_e, key) => ai.saveKey(key ? String(key).trim() : null))
 ipcMain.handle('ai:title', (_e, text) => ai.title(String(text ?? '')))
+ipcMain.handle('ai:apple-available', () => ai.appleAvailable())
+ipcMain.handle('ai:apple-title', (_e, text) => ai.appleTitle(String(text ?? '')))
 
 // ── Updates ──────────────────────────────────────────────────────────────────────────────────
 

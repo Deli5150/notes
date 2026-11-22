@@ -13,6 +13,7 @@ The first release of Notes, for Mac and Windows.
 - Locked notes with one password, and Touch ID on Macs
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
 - ⌘W (Ctrl+W) closes the open note, then the window (⇧⌘W closes the window)
+- Generate title reads the whole note and sums it up: with Apple Intelligence on the Mac (on-device), or Claude with your own API key
 - Nothing and Pixel themes, with their own fonts and shapes
 - ⌘T (Ctrl+T) for a new note and ⌘S (Ctrl+S) to show or hide the sidebar, as in Arc
 - Sync with Google (your own Drive app folder); notes changed on two devices at once keep both versions

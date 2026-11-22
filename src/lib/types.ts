@@ -130,7 +130,8 @@ export interface Settings {
   /** The pinned folders section is folded away. */
   foldersCollapsed: boolean
   /** Generate title: on this computer, or with Claude (needs an API key on this computer). */
-  titleEngine: 'local' | 'claude'
+  /** auto: Apple Intelligence when the Mac has it, else Claude with a key, else basic. */
+  titleEngine: TitleEngine
 }
 
 export interface AppData {
@@ -142,3 +143,5 @@ export interface AppData {
 
 export const QUICK_NOTES = 'quick'
 export const DEFAULT_FOLDER = 'notes'
+
+export type TitleEngine = 'auto' | 'apple' | 'claude' | 'basic'

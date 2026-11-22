@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { buildNative } from './native.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const desktop = path.join(root, 'desktop')
@@ -23,6 +24,7 @@ const env = fs.existsSync(path.join(root, '.env')) ? fs.readFileSync(path.join(r
 const get = (k) => env.match(new RegExp(`^${k}=(.*)$`, 'm'))?.[1]?.trim() ?? ''
 fs.writeFileSync(path.join(desktop, 'google.json'), JSON.stringify({ clientId: get('NOTES_GOOGLE_CLIENT_ID'), clientSecret: get('NOTES_GOOGLE_CLIENT_SECRET') }))
 
+buildNative()
 run('npx', ['vite', 'build'])
 if (!fs.existsSync(path.join(desktop, 'web', 'index.html'))) throw new Error('web build failed')
 

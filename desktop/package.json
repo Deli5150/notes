@@ -53,6 +53,12 @@
         }
       ],
       "category": "public.app-category.productivity",
+      "extraResources": [
+        {
+          "from": "bin/notes-titles",
+          "to": "notes-titles"
+        }
+      ],
       "icon": "build/icon.icns",
       "identity": "-",
       "hardenedRuntime": false,
