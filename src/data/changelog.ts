@@ -4,7 +4,7 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
     version: '1.0.0',
     date: '2026-11-21',
     items: [
-      'Notes for Mac and Windows, inspired by Apple Notes: folders, Smart Folders, tags, pinned notes and Recently Deleted',
+      'Notes for Mac and Windows: folders, Smart Folders, tags, pinned notes and Recently Deleted',
       'Title, Heading, Subheading, Body and Monostyled text; bulleted, dashed, numbered lists and checklists; block quotes; tables',
       'Bold, italic, underline, strikethrough, highlights in five colours, text colours, fonts, sizes, alignment and indentation',
       'Pictures, scans, sketches, audio recordings, PDFs, files and link previews in your notes',

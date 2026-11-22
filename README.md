@@ -2,7 +2,7 @@
 
 # Notes
 
-A notes app with Apple Notes’ features and its own Arc-inspired look, for **macOS** and **Windows** (Android next): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
+A notes app with an Arc-inspired look, for **macOS** and **Windows** (Android next): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
 
 **[Download the latest release](https://github.com/Deli5150/notes/releases/latest)** · [Website](https://deli5150.github.io/notes/) · [Report a bug or request a feature](https://github.com/Deli5150/notes/issues/new/choose)
 
@@ -47,4 +47,4 @@ NOTES_GOOGLE_CLIENT_SECRET=…
 
 ## License
 
-MIT. Inspired by Apple Notes; not affiliated with Apple.
+MIT.
