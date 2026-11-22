@@ -2,13 +2,13 @@
 
 # Notes
 
-A notes app inspired by Apple Notes, for **macOS** and **Windows** (Android next): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
+A notes app with Apple Notes’ features and its own Arc-inspired look, for **macOS** and **Windows** (Android next): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
 
 **[Download the latest release](https://github.com/Deli5150/notes/releases/latest)** · [Website](https://deli5150.github.io/notes/) · [Report a bug or request a feature](https://github.com/Deli5150/notes/issues/new/choose)
 
 ## Features
 
-- **Organise** — nested folders, Smart Folders (by tags, dates, checklists, attachments, locked, pinned, Quick Notes, folders), #tags in the sidebar, pinned notes, Quick Notes (⌃⌥N from anywhere), Recently Deleted for 30 days, drag notes and folders around.
+- **Organise** — folders as pinned tiles with icons and colours (like Arc’s pinned tabs), nested folders, Smart Folders (by tags, dates, checklists, attachments, locked, pinned, Quick Notes, folders), #tags in the sidebar, pinned notes, Quick Notes (⌃⌥N from anywhere), Recently Deleted for 30 days, drag notes and folders around.
 - **Write** — Title, Heading, Subheading, Body, Monostyled; bulleted, dashed and numbered lists; checklists (checked items can sink to the bottom); block quotes; tables; bold, italic, underline, strikethrough, super/subscript; highlights in Purple, Pink, Orange, Mint and Blue; text colours; any font on your computer, plus bundled ones; sizes, alignment, indentation; collapsible sections; Lines & Grids; links to other notes (type `>>`); find & replace; spelling.
 - **Attach** — pictures (paste, drop or pick), scanned documents and photos from your camera, sketches (pen, marker, pencil, eraser; ink follows light/dark), audio recordings, videos, PDFs with a preview, any file, and link previews.
 - **Math Notes** — type `rent = 1200` then `rent * 12 =` and the answer appears (Tab to insert, or have it inserted automatically).

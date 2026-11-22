@@ -72,6 +72,10 @@ export interface Folder {
   order: number
   /** A Smart Folder: shows notes from anywhere that match. */
   smart?: SmartFilter
+  /** Its pinned tile's icon: a Lucide icon name ("lucide:Book") or an emoji. */
+  icon?: string
+  /** Its tile's colour (a hex colour), else the theme's accent. */
+  color?: string
   /** The folder's own sort (else the app's). */
   sort?: SortBy
 }

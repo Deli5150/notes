@@ -1,5 +1,7 @@
 import { useEditorState } from '@tiptap/react'
-import { ALargeSmall, AudioLines, LayoutGrid, List, ListChecks, Lock, LockOpen, MoreHorizontal, Paperclip, PanelLeft, Search, Share, SquarePen, Table, Trash2, X } from 'lucide-react'
+import { ALargeSmall, AudioLines, Inbox, ListChecks, Lock, LockOpen, MoreHorizontal, Paperclip, PanelLeft, Share, SquarePen, Table } from 'lucide-react'
+import { listDate } from '../lib/dates'
+import { FolderGlyph } from './FolderIcon'
 import { useState } from 'react'
 import { useEditorRef } from '../editor/Editor'
 import { useLock } from '../lib/lock'
@@ -12,6 +14,7 @@ import {
   deleteNotes,
   find,
   insertTable,
+  moveMenu,
   lockNow,
   MOD,
   newNote,
@@ -66,78 +69,47 @@ function moreMenu(): MenuItem[] {
   ]
 }
 
-function SearchBox() {
-  const search = useUi((s) => s.search)
-  const searching = useUi((s) => s.searching)
-  if (!searching && !search)
-    return (
-      <button className="tb-btn" title={`Search (${'⌥'}${MOD}F)`} onClick={() => useUi.setState({ searching: true })}>
-        <Search size={17} />
-      </button>
-    )
-  return (
-    <div className="search-field">
-      <Search size={14} />
-      <input
-        autoFocus
-        placeholder="Search"
-        value={search}
-        onChange={(e) => useUi.setState({ search: e.target.value })}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') useUi.setState({ search: '', searching: false })
-        }}
-        onBlur={() => !search && useUi.setState({ searching: false })}
-      />
-      {search && (
-        <button onMouseDown={(e) => e.preventDefault()} onClick={() => useUi.setState({ search: '' })} title="Clear">
-          <X size={12} />
-        </button>
-      )}
-    </div>
-  )
-}
-
-export function Toolbar({ listWidth, showList }: { listWidth: number; showList: boolean }) {
-  const view = useStore((s) => s.settings.view)
+export function Toolbar() {
   const sidebarHidden = useStore((s) => s.settings.sidebarHidden)
   const hasLock = useStore((s) => Boolean(s.settings.lock))
   const noteId = useUi((s) => s.noteId)
-  const source = useUi((s) => s.source)
   const note = useStore((s) => (noteId ? s.notes.find((n) => n.id === noteId) : undefined))
+  const folder = useStore((s) => (note ? s.folders.find((f) => f.id === note.folderId) : undefined))
   const unlocked = useLock((s) => Boolean(s.key))
   const editor = useEditorRef((s) => s.editor)
   const [format, setFormat] = useState<DOMRect | null>(null)
   const inTable = useEditorState({ editor, selector: ({ editor: e }) => Boolean(e?.isActive('table')) })
   const inChecklist = useEditorState({ editor, selector: ({ editor: e }) => Boolean(e?.isActive('taskList')) })
-  const trash = source.kind === 'trash'
   const noteEditable = Boolean(editor && note && !note.deletedAt)
 
   return (
     <div className="toolbar">
-      <div className="toolbar-list" style={{ width: showList ? listWidth : undefined }}>
-        <button className="tb-btn" title={`${sidebarHidden ? 'Show' : 'Hide'} Folders`} onClick={() => useStore.getState().setSettings({ sidebarHidden: !sidebarHidden })}>
-          <PanelLeft size={17} />
-        </button>
-        <div className="tb-seg">
-          <button className={view === 'list' ? 'is-on' : ''} title="View as List" onClick={() => (useStore.getState().setSettings({ view: 'list' }), useUi.setState({ galleryOpen: false }))}>
-            <List size={16} />
+      {sidebarHidden && (
+        <>
+          <button className="tb-btn" title="Show Sidebar" onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>
+            <PanelLeft size={16} />
           </button>
-          <button className={view === 'gallery' ? 'is-on' : ''} title="View as Gallery" onClick={() => (useStore.getState().setSettings({ view: 'gallery' }), useUi.setState({ galleryOpen: false }))}>
-            <LayoutGrid size={15} />
+          <button className="tb-btn" title={`New Note (${MOD}N)`} onClick={() => newNote()}>
+            <SquarePen size={16} />
           </button>
-        </div>
-        <span className="tb-flex" />
-        <button className="tb-btn" title="Delete" disabled={!noteId} onClick={() => void deleteNotes()}>
-          <Trash2 size={17} />
+        </>
+      )}
+      {note && (
+        <button
+          className="crumb"
+          title="Move to another folder"
+          onClick={(e) => !note.deletedAt && menuUnder(e.currentTarget, moveMenu([note]))}
+        >
+          {folder && folder.id !== 'notes' ? <FolderGlyph folder={folder} size={13} /> : <Inbox size={13} />}
+          <span>{note.deletedAt ? 'Recently Deleted' : folder && folder.id !== 'notes' ? folder.name : 'Unfiled'}</span>
+          <span className="crumb-sep">·</span>
+          <span className="crumb-date">Edited {listDate(note.updatedAt).toLowerCase() === 'yesterday' ? 'yesterday' : listDate(note.updatedAt)}</span>
         </button>
-      </div>
-      <div className="toolbar-note">
-        <button className="tb-btn" title={`New Note (${MOD}N)`} disabled={trash && false} onClick={() => newNote()}>
-          <SquarePen size={17} />
-        </button>
-        <span className="tb-gap" />
+      )}
+      <span className="tb-flex" />
+      <div className="tb-group">
         <button className={`tb-btn${format ? ' is-on' : ''}`} title="Format" disabled={!noteEditable} onClick={(e) => setFormat(format ? null : e.currentTarget.getBoundingClientRect())}>
-          <ALargeSmall size={19} />
+          <ALargeSmall size={18} />
         </button>
         <button
           className={`tb-btn${inChecklist ? ' is-on' : ''}`}
@@ -146,18 +118,19 @@ export function Toolbar({ listWidth, showList }: { listWidth: number; showList: 
           onClick={toggleChecklist}
           onContextMenu={(e) => (e.preventDefault(), menuUnder(e.currentTarget, checklistMenu()))}
         >
-          <ListChecks size={17} />
+          <ListChecks size={16} />
         </button>
         <button className={`tb-btn${inTable ? ' is-on' : ''}`} title="Table" disabled={!noteEditable} onClick={(e) => (inTable ? menuUnder(e.currentTarget, tableMenu()) : insertTable())}>
-          <Table size={17} />
+          <Table size={16} />
         </button>
         <button className="tb-btn" title="Attach" disabled={!noteEditable} onClick={(e) => menuUnder(e.currentTarget, attachMenu())}>
-          <Paperclip size={17} />
+          <Paperclip size={16} />
         </button>
         <button className="tb-btn" title="Record Audio" disabled={!noteEditable} onClick={() => void addRecording()}>
-          <AudioLines size={17} />
+          <AudioLines size={16} />
         </button>
-        <span className="tb-flex" />
+      </div>
+      <div className="tb-group">
         <button
           className="tb-btn"
           title="Lock"
@@ -165,23 +138,19 @@ export function Toolbar({ listWidth, showList }: { listWidth: number; showList: 
           onClick={(e) =>
             menuUnder(
               e.currentTarget,
-              [
-                { label: note?.locked ? 'Remove Lock' : 'Lock Note', onClick: () => void toggleLock() },
-                ...(hasLock ? [{ label: 'Lock Now', disabled: !unlocked, onClick: lockNow }] : [])
-              ],
+              [{ label: note?.locked ? 'Remove Lock' : 'Lock Note', onClick: () => void toggleLock() }, ...(hasLock ? [{ label: 'Lock Now', disabled: !unlocked, onClick: lockNow }] : [])],
               'right'
             )
           }
         >
-          {note?.locked && unlocked ? <LockOpen size={17} /> : <Lock size={17} />}
+          {note?.locked && unlocked ? <LockOpen size={16} /> : <Lock size={16} />}
         </button>
         <button className="tb-btn" title="Share" disabled={!note} onClick={(e) => menuUnder(e.currentTarget, shareMenu(noteById(noteId)), 'right')}>
-          <Share size={17} />
+          <Share size={16} />
         </button>
         <button className="tb-btn" title="More" onClick={(e) => menuUnder(e.currentTarget, moreMenu(), 'right')}>
-          <MoreHorizontal size={17} />
+          <MoreHorizontal size={16} />
         </button>
-        <SearchBox />
       </div>
       {format && editor && <FormatPanel editor={editor} anchor={format} onClose={() => setFormat(null)} />}
     </div>

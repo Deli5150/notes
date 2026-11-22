@@ -1,5 +1,5 @@
-import { ChevronRight, Cloud, CloudOff, Folder as FolderIcon, FolderCog, MessageSquareText, Notebook, NotebookPen, Plus, Settings, Trash2, Zap } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { ArrowUpDown, ChevronDown, Cloud, CloudOff, FolderCog, Hash, Layers, MessageSquareText, PanelLeftClose, Plus, Search, Settings, SquarePen, Trash2, X, Zap } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { isSystemFolder } from '../lib/defaults'
 import { allTags, matchesSmart } from '../lib/query'
@@ -7,11 +7,14 @@ import { folderTree, useStore } from '../lib/store'
 import { useSyncState } from '../lib/syncRunner'
 import { sameSource, useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, QUICK_NOTES, type Folder, type SortBy } from '../lib/types'
-import { newFolder, newSmartFolder } from './actions'
-import { confirm, menuUnder, prompt, showMenu, toast } from './overlays'
+import { newFolder, newNote, newSmartFolder } from './actions'
+import { editFolderLook, FolderGlyph } from './FolderIcon'
+import { listSortMenu, NoteList, useListSections } from './NoteList'
+import { confirm, menuUnder, showMenu, toast, type MenuItem } from './overlays'
 import { openSmartFolder } from './SmartFolder'
 
-// The left column: folders (nested, with Smart Folders), Recently Deleted, and #tags.
+// The one sidebar: search, folders as pinned tiles (like Arc's pinned tabs), a switcher between
+// All Notes, Quick Notes and the other views, and the notes themselves.
 
 export const NOTE_DRAG = 'application/x-notes-ids'
 const FOLDER_DRAG = 'application/x-notes-folder'
@@ -36,7 +39,7 @@ function useCounts() {
   }, [notes, folders])
 }
 
-function sortMenu(folder: Folder) {
+function sortMenu(folder: Folder): MenuItem[] {
   const set = (sort: SortBy | undefined) => useStore.getState().updateFolder(folder.id, { sort })
   return [
     { label: 'Default (from Settings)', checked: !folder.sort, onClick: () => set(undefined) },
@@ -46,41 +49,36 @@ function sortMenu(folder: Folder) {
   ]
 }
 
-function folderMenu(folder: Folder) {
+async function deleteFolder(folder: Folder) {
+  const s = useStore.getState()
+  const count = s.notes.filter((n) => !n.deletedAt && folderTree(s.folders, folder.id).includes(n.folderId)).length
+  const ok = await confirm({
+    title: `Delete “${folder.name}”?`,
+    message: folder.smart ? 'The notes in it stay where they are.' : count ? `Its ${count === 1 ? 'note' : `${count} notes`} and any folders inside it will be moved to Recently Deleted.` : 'Any folders inside it will be deleted too.',
+    ok: 'Delete',
+    danger: true
+  })
+  if (!ok) return
+  s.deleteFolder(folder.id)
+  const ui = useUi.getState()
+  if (ui.source.kind === 'folder' && !useStore.getState().folders.some((f) => f.id === (ui.source as { id: string }).id)) ui.select({ kind: 'all' })
+}
+
+export function folderMenu(folder: Folder): MenuItem[] {
   const s = useStore.getState()
   const system = isSystemFolder(folder.id)
   return [
+    ...(!system ? [{ label: 'Rename', onClick: () => useUi.setState({ renaming: folder.id }) }] : []),
+    ...(!system ? [{ label: 'Change Icon & Colour…', onClick: () => editFolderLook(folder) }] : []),
     ...(folder.smart
       ? [{ label: 'Edit Smart Folder…', onClick: () => openSmartFolder(folder) }]
       : [
-          { label: 'New Folder Inside', onClick: () => void newFolder(folder.id) },
-          { label: 'New Note in Folder', onClick: () => (useUi.getState().select({ kind: 'folder', id: folder.id }), window.dispatchEvent(new CustomEvent('notes:command', { detail: 'new-note' }))) }
+          { label: 'New Note Here', onClick: () => (useUi.getState().select({ kind: 'folder', id: folder.id }), newNote(folder.id)) },
+          { label: 'New Folder Inside', onClick: () => void newFolder(folder.id) }
         ]),
-    ...(!system ? [{ label: 'Rename Folder', onClick: () => useUi.setState({ renaming: folder.id }) }] : []),
     { label: 'Sort By', submenu: sortMenu(folder) },
     ...(folder.parentId ? [{ label: 'Move to Top Level', onClick: () => s.updateFolder(folder.id, { parentId: undefined }) }] : []),
-    ...(!system
-      ? [
-          { separator: true },
-          {
-            label: folder.smart ? 'Delete Smart Folder' : 'Delete Folder',
-            danger: true,
-            onClick: async () => {
-              const count = s.notes.filter((n) => !n.deletedAt && folderTree(s.folders, folder.id).includes(n.folderId)).length
-              const ok = await confirm({
-                title: `Delete “${folder.name}”?`,
-                message: folder.smart ? 'The notes in it stay where they are.' : count ? `Its ${count === 1 ? 'note' : `${count} notes`} and any folders inside it will be moved to Recently Deleted.` : 'Any folders inside it will be deleted too.',
-                ok: 'Delete',
-                danger: true
-              })
-              if (!ok) return
-              s.deleteFolder(folder.id)
-              const ui = useUi.getState()
-              if (ui.source.kind === 'folder' && !useStore.getState().folders.some((f) => f.id === (ui.source as { id: string }).id)) ui.select({ kind: 'folder', id: DEFAULT_FOLDER })
-            }
-          }
-        ]
-      : [])
+    ...(!system ? [{ separator: true }, { label: folder.smart ? 'Delete Smart Folder' : 'Delete Folder', danger: true, onClick: () => void deleteFolder(folder) }] : [])
   ]
 }
 
@@ -95,6 +93,7 @@ function RenameField({ folder }: { folder: Folder }) {
       className="rename"
       autoFocus
       value={name}
+      onClick={(e) => e.stopPropagation()}
       onFocus={(e) => e.target.select()}
       onChange={(e) => setName(e.target.value)}
       onBlur={() => done(true)}
@@ -106,227 +105,266 @@ function RenameField({ folder }: { folder: Folder }) {
   )
 }
 
-function FolderRow({ folder, depth, count, hasChildren, collapsed }: { folder: Folder; depth: number; count: number; hasChildren: boolean; collapsed: boolean }) {
-  const active = useUi((s) => sameSource(s.source, { kind: 'folder', id: folder.id }))
+/** One pinned folder tile. Click to open (again to go back to All Notes), drop notes on it, drag to reorder. */
+function Tile({ folder, count }: { folder: Folder; count: number }) {
+  const active = useUi((s) => s.source.kind === 'folder' && (s.source.id === folder.id || folderTree(useStore.getState().folders, folder.id).includes(s.source.id)))
   const renaming = useUi((s) => s.renaming === folder.id)
-  const [over, setOver] = useState(false)
-  const Icon = folder.id === QUICK_NOTES ? Zap : folder.smart ? FolderCog : FolderIcon
-  const toggle = () => {
-    const s = useStore.getState()
-    const list = s.settings.collapsedFolders
-    s.setSettings({ collapsedFolders: collapsed ? list.filter((x) => x !== folder.id) : [...list, folder.id] })
-  }
+  const [over, setOver] = useState<'notes' | 'before' | null>(null)
   return (
     <div
-      className={`side-row${active ? ' is-active' : ''}${over ? ' is-drop' : ''}`}
-      style={{ paddingLeft: 10 + depth * 16 }}
-      onClick={() => useUi.getState().select({ kind: 'folder', id: folder.id })}
-      onDoubleClick={() => !isSystemFolder(folder.id) && useUi.setState({ renaming: folder.id })}
+      className={`tile${active ? ' is-active' : ''}${over === 'notes' ? ' is-drop' : ''}${over === 'before' ? ' is-before' : ''}`}
+      style={{ '--tile': folder.color ?? 'var(--accent)' } as React.CSSProperties}
+      title={`${folder.name}${count ? ` — ${count} note${count === 1 ? '' : 's'}` : ''}`}
+      onClick={() => useUi.getState().select(active && useUi.getState().source.kind === 'folder' && (useUi.getState().source as { id: string }).id === folder.id ? { kind: 'all' } : { kind: 'folder', id: folder.id })}
+      onDoubleClick={() => useUi.setState({ renaming: folder.id })}
       onContextMenu={(e) => {
         e.preventDefault()
         showMenu(e.clientX, e.clientY, folderMenu(folder))
       }}
-      draggable={!isSystemFolder(folder.id) && !renaming}
+      draggable={!renaming}
       onDragStart={(e) => e.dataTransfer.setData(FOLDER_DRAG, folder.id)}
       onDragOver={(e) => {
-        const types = e.dataTransfer.types
-        if (folder.smart || (!types.includes(NOTE_DRAG) && !types.includes(FOLDER_DRAG))) return
-        e.preventDefault()
-        setOver(true)
+        const t = e.dataTransfer.types
+        if (t.includes(NOTE_DRAG) && !folder.smart) {
+          e.preventDefault()
+          setOver('notes')
+        } else if (t.includes(FOLDER_DRAG)) {
+          e.preventDefault()
+          setOver('before')
+        }
       }}
-      onDragLeave={() => setOver(false)}
+      onDragLeave={() => setOver(null)}
       onDrop={(e) => {
-        setOver(false)
-        const ids = e.dataTransfer.getData(NOTE_DRAG)
+        setOver(null)
         const s = useStore.getState()
+        const ids = e.dataTransfer.getData(NOTE_DRAG)
         if (ids) {
           s.moveNotes(ids.split(','), folder.id)
           toast(`Moved to ${folder.name}`)
           return
         }
         const fid = e.dataTransfer.getData(FOLDER_DRAG)
-        if (fid && fid !== folder.id && !folderTree(s.folders, fid).includes(folder.id) && !isSystemFolder(folder.id)) s.updateFolder(fid, { parentId: folder.id })
+        if (!fid || fid === folder.id) return
+        // Reorder: the dragged folder goes before this one.
+        const tiles = s.folders.filter((f) => !f.parentId && !isSystemFolder(f.id) && !f.smart && f.id !== fid).sort((a, b) => a.order - b.order)
+        const at = tiles.findIndex((f) => f.id === folder.id)
+        tiles.splice(at, 0, s.folders.find((f) => f.id === fid)!)
+        tiles.forEach((f, i) => f.order !== i && s.updateFolder(f.id, { order: i, parentId: undefined }))
       }}
     >
-      <span
-        className={`side-disclosure${hasChildren ? '' : ' is-empty'}${collapsed ? '' : ' is-open'}`}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (hasChildren) toggle()
-        }}
-      >
-        {hasChildren && <ChevronRight size={12} strokeWidth={2.4} />}
-      </span>
-      <Icon size={16} className="side-icon" />
-      {renaming ? <RenameField folder={folder} /> : <span className="side-label">{folder.name}</span>}
-      {!renaming && <span className="side-count">{count || ''}</span>}
+      <div className="tile-icon">
+        <FolderGlyph folder={folder} size={20} />
+      </div>
+      {renaming ? <RenameField folder={folder} /> : <div className="tile-name">{folder.name}</div>}
     </div>
   )
 }
 
-function TagsSection() {
-  const notes = useStore((s) => s.notes)
-  const enabled = useStore((s) => s.settings.tags)
-  const source = useUi((s) => s.source)
-  const tags = useMemo(() => allTags(notes), [notes])
-  if (!enabled || !tags.length) return null
-  const selected = source.kind === 'tags' ? source.tags : []
-  const pick = (tag: string, multi: boolean) => {
-    const next = multi ? (selected.includes(tag) ? selected.filter((t) => t !== tag) : [...selected, tag]) : selected.length === 1 && selected[0] === tag ? [] : [tag]
-    useUi.getState().select(next.length ? { kind: 'tags', tags: next } : { kind: 'folder', id: DEFAULT_FOLDER })
-  }
+function FolderTiles() {
+  const folders = useStore(useShallow((s) => s.folders))
+  const { counts } = useCounts()
+  const tiles = useMemo(() => folders.filter((f) => !f.parentId && !isSystemFolder(f.id) && !f.smart).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)), [folders])
   return (
-    <div className="side-section">
-      <div className="side-header">Tags</div>
-      <div className="tag-chips">
-        <button className={`chip${source.kind === 'tags' && !selected.length ? ' is-on' : ''}`} onClick={() => useUi.getState().select({ kind: 'tags', tags: [] })}>
-          All Tags
+    <div className="tiles">
+      {tiles.map((f) => (
+        <Tile key={f.id} folder={f} count={folderTree(folders, f.id).reduce((n, id) => n + (counts.get(id) ?? 0), 0)} />
+      ))}
+      <button className="tile is-add" title="New Folder" onClick={() => void newFolder()}>
+        <Plus size={18} />
+        <div className="tile-name">New Folder</div>
+      </button>
+    </div>
+  )
+}
+
+/** Inside a folder that has folders of its own: them as chips. */
+function SubFolders() {
+  const folders = useStore((s) => s.folders)
+  const source = useUi((s) => s.source)
+  if (source.kind !== 'folder') return null
+  const current = folders.find((f) => f.id === source.id)
+  if (!current || current.smart || isSystemFolder(current.id)) return null
+  const top = (() => {
+    let f = current
+    while (f.parentId) f = folders.find((x) => x.id === f.parentId) ?? f
+    return f
+  })()
+  const children = (id: string) => folders.filter((f) => f.parentId === id).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+  const rows: Array<{ f: Folder; depth: number }> = []
+  const walk = (id: string, depth: number) => children(id).forEach((f) => (rows.push({ f, depth }), walk(f.id, depth + 1)))
+  walk(top.id, 0)
+  if (!rows.length) return null
+  return (
+    <div className="subfolders">
+      <button className={`chip${current.id === top.id ? ' is-on' : ''}`} onClick={() => useUi.getState().select({ kind: 'folder', id: top.id })}>
+        All of {top.name}
+      </button>
+      {rows.map(({ f }) => (
+        <button
+          key={f.id}
+          className={`chip${current.id === f.id ? ' is-on' : ''}`}
+          onClick={() => useUi.getState().select({ kind: 'folder', id: f.id })}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            showMenu(e.clientX, e.clientY, folderMenu(f))
+          }}
+          onDragOver={(e) => e.dataTransfer.types.includes(NOTE_DRAG) && e.preventDefault()}
+          onDrop={(e) => {
+            const ids = e.dataTransfer.getData(NOTE_DRAG)
+            if (ids) useStore.getState().moveNotes(ids.split(','), f.id)
+          }}
+        >
+          {f.name}
         </button>
-        {tags.map(({ tag }) => (
-          <button
-            key={tag}
-            className={`chip${selected.includes(tag) ? ' is-on' : ''}`}
-            onClick={(e) => pick(tag, e.metaKey || e.ctrlKey || e.shiftKey || selected.length > 1)}
-            onContextMenu={(e) => {
-              e.preventDefault()
-              showMenu(e.clientX, e.clientY, [
-                {
-                  label: 'Rename Tag…',
-                  onClick: async () => {
-                    const name = await prompt({ title: 'Rename Tag', value: tag, ok: 'Rename' })
-                    if (name) useStore.getState().renameTag(tag, name)
-                  }
-                },
-                {
-                  label: 'Delete Tag',
-                  danger: true,
-                  onClick: async () => {
-                    const ok = await confirm({ title: `Delete #${tag}?`, message: 'The tag will be removed from every note that has it.', ok: 'Delete', danger: true })
-                    if (ok) useStore.getState().deleteTag(tag)
-                  }
-                }
-              ])
-            }}
-          >
-            #{tag}
-          </button>
-        ))}
-      </div>
+      ))}
+    </div>
+  )
+}
+
+/** The button above the list: which notes it shows (All Notes, Quick Notes, Smart Folders, tags, Recently Deleted). */
+function SourceSwitcher() {
+  const source = useUi((s) => s.source)
+  const search = useUi((s) => s.search)
+  const folders = useStore((s) => s.folders)
+  const notes = useStore((s) => s.notes)
+  const { counts, live, trash } = useCounts()
+  const { flat } = useListSections()
+  const select = (src: Parameters<ReturnType<typeof useUi.getState>['select']>[0]) => useUi.getState().select(src)
+
+  let label = 'All Notes'
+  let icon: React.ReactNode = <Layers size={15} />
+  if (search.trim()) {
+    label = 'Search'
+    icon = <Search size={15} />
+  } else if (source.kind === 'trash') {
+    label = 'Recently Deleted'
+    icon = <Trash2 size={15} />
+  } else if (source.kind === 'tags') {
+    label = source.tags.length ? source.tags.map((t) => `#${t}`).join(' ') : 'All Tags'
+    icon = <Hash size={15} />
+  } else if (source.kind === 'folder') {
+    const f = folders.find((x) => x.id === source.id)
+    label = f?.id === DEFAULT_FOLDER ? 'Unfiled' : (f?.name ?? 'Notes')
+    icon = f?.smart ? <FolderCog size={15} /> : f ? <FolderGlyph folder={f} size={15} /> : null
+  }
+
+  const open = (el: Element) => {
+    const smart = folders.filter((f) => f.smart)
+    const tags = allTags(notes)
+    const items: MenuItem[] = [
+      { label: `All Notes`, icon: <Layers size={14} />, shortcut: String(live), checked: source.kind === 'all', onClick: () => select({ kind: 'all' }) },
+      { label: 'Quick Notes', icon: <Zap size={14} />, shortcut: String(counts.get(QUICK_NOTES) ?? 0), checked: sameSource(source, { kind: 'folder', id: QUICK_NOTES }), onClick: () => select({ kind: 'folder', id: QUICK_NOTES }) },
+      { label: 'Unfiled', shortcut: String(counts.get(DEFAULT_FOLDER) ?? 0), checked: sameSource(source, { kind: 'folder', id: DEFAULT_FOLDER }), onClick: () => select({ kind: 'folder', id: DEFAULT_FOLDER }) },
+      { separator: true },
+      ...(smart.length ? [{ header: true, label: 'Smart Folders' } as MenuItem] : []),
+      ...smart.map((f) => ({ label: f.name, icon: <FolderCog size={14} />, shortcut: String(counts.get(f.id) ?? 0), checked: sameSource(source, { kind: 'folder', id: f.id }), onClick: () => select({ kind: 'folder', id: f.id }) })),
+      { label: 'New Smart Folder…', icon: <Plus size={14} />, onClick: newSmartFolder },
+      ...(tags.length
+        ? [
+            { separator: true },
+            {
+              label: 'Tags',
+              icon: <Hash size={14} />,
+              submenu: [
+                { label: 'All Tags', checked: source.kind === 'tags' && !source.tags.length, onClick: () => select({ kind: 'tags', tags: [] }) },
+                { separator: true },
+                ...tags.map(({ tag, count }) => ({ label: `#${tag}`, shortcut: String(count), checked: source.kind === 'tags' && source.tags.includes(tag), onClick: () => select({ kind: 'tags', tags: [tag] }) }))
+              ]
+            } as MenuItem
+          ]
+        : []),
+      { separator: true },
+      { label: 'Recently Deleted', icon: <Trash2 size={14} />, shortcut: trash ? String(trash) : '', checked: source.kind === 'trash', onClick: () => select({ kind: 'trash' }) }
+    ]
+    menuUnder(el, items)
+  }
+
+  return (
+    <div className="list-head">
+      <button className="switcher" onClick={(e) => open(e.currentTarget)}>
+        <span className="switcher-icon">{icon}</span>
+        <span className="switcher-label">{label}</span>
+        <ChevronDown size={14} className="switcher-chevron" />
+      </button>
+      <span className="list-count">{flat.length}</span>
+      <span className="tb-flex" />
+      <button
+        className="tb-btn"
+        title="Sort, group and view"
+        onClick={(e) =>
+          menuUnder(
+            e.currentTarget,
+            [
+              ...listSortMenu(),
+              { separator: true },
+              { header: true, label: 'View' },
+              { label: 'List', checked: useStore.getState().settings.view === 'list', onClick: () => useStore.getState().setSettings({ view: 'list' }) },
+              { label: 'Gallery', checked: useStore.getState().settings.view === 'gallery', onClick: () => (useStore.getState().setSettings({ view: 'gallery' }), useUi.setState({ galleryOpen: false })) }
+            ],
+            'right'
+          )
+        }
+      >
+        <ArrowUpDown size={14} />
+      </button>
+    </div>
+  )
+}
+
+function SearchField() {
+  const search = useUi((s) => s.search)
+  return (
+    <div className="search-field">
+      <Search size={14} />
+      <input placeholder="Search notes" value={search} onChange={(e) => useUi.setState({ search: e.target.value, searching: true })} onKeyDown={(e) => e.key === 'Escape' && useUi.setState({ search: '', searching: false })} />
+      {search && (
+        <button onMouseDown={(e) => e.preventDefault()} onClick={() => useUi.setState({ search: '', searching: false })} title="Clear">
+          <X size={11} />
+        </button>
+      )}
     </div>
   )
 }
 
 export function Sidebar({ width, onSettings, onFeedback }: { width: number; onSettings: () => void; onFeedback: () => void }) {
-  const folders = useStore(useShallow((s) => s.folders))
-  const collapsed = useStore((s) => s.settings.collapsedFolders)
-  const sync = useStore(useShallow((s) => ({ enabled: s.sync.enabled, email: s.sync.email, error: s.sync.error })))
+  const sync = useStore(useShallow((s) => ({ enabled: s.sync.enabled, error: s.sync.error })))
   const busy = useSyncState((s) => s.busy)
-  const { counts, live, trash } = useCounts()
-  const allActive = useUi((s) => s.source.kind === 'all')
-  const trashActive = useUi((s) => s.source.kind === 'trash')
-  const [topDrop, setTopDrop] = useState(false)
-  const addRef = useRef<HTMLButtonElement>(null)
-
-  const rows = useMemo(() => {
-    const out: Array<{ folder: Folder; depth: number; hasChildren: boolean }> = []
-    const kids = (parent?: string) =>
-      folders
-        .filter((f) => f.parentId === parent && (parent || !f.smart))
-        .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, undefined, { numeric: true }))
-    const walk = (parent: string | undefined, depth: number) => {
-      for (const f of kids(parent)) {
-        const children = kids(f.id)
-        out.push({ folder: f, depth, hasChildren: children.length > 0 })
-        if (!collapsed.includes(f.id)) walk(f.id, depth + 1)
-      }
-    }
-    walk(undefined, 0)
-    return out
-  }, [folders, collapsed])
-  const smart = folders.filter((f) => f.smart && !f.parentId)
+  const { trash } = useCounts()
+  const trashOn = useUi((s) => s.source.kind === 'trash')
 
   return (
     <aside className="sidebar" style={{ width }}>
-      <div className="sidebar-top" />
-      <div className="sidebar-scroll">
-        <div
-          className={`side-section${topDrop ? ' is-drop' : ''}`}
-          onDragOver={(e) => {
-            if (!e.dataTransfer.types.includes(FOLDER_DRAG)) return
-            e.preventDefault()
-            setTopDrop(true)
-          }}
-          onDragLeave={() => setTopDrop(false)}
-          onDrop={(e) => {
-            setTopDrop(false)
-            const fid = e.dataTransfer.getData(FOLDER_DRAG)
-            if (fid && e.target === e.currentTarget) useStore.getState().updateFolder(fid, { parentId: undefined })
-          }}
-        >
-          <div className="side-header">
-            {sync.enabled ? (
-              <>
-                <Cloud size={12} /> Google Drive{busy ? ' · Syncing…' : ''}
-              </>
-            ) : (
-              <>
-                <CloudOff size={12} /> On This Computer
-              </>
-            )}
-          </div>
-          {sync.error && (
-            <div className="side-error" onClick={onSettings} title={sync.error}>
-              Sync problem — open Settings
-            </div>
-          )}
-          <div className={`side-row${allActive ? ' is-active' : ''}`} style={{ paddingLeft: 10 }} onClick={() => useUi.getState().select({ kind: 'all' })}>
-            <span className="side-disclosure is-empty" />
-            <Notebook size={16} className="side-icon" />
-            <span className="side-label">All Notes</span>
-            <span className="side-count">{live || ''}</span>
-          </div>
-          {rows.map(({ folder, depth, hasChildren }) => (
-            <FolderRow key={folder.id} folder={folder} depth={depth} count={counts.get(folder.id) ?? 0} hasChildren={hasChildren} collapsed={collapsed.includes(folder.id)} />
-          ))}
-          {smart.map((f) => (
-            <FolderRow key={f.id} folder={f} depth={0} count={counts.get(f.id) ?? 0} hasChildren={false} collapsed={false} />
-          ))}
-          {trash > 0 && (
-            <div className={`side-row${trashActive ? ' is-active' : ''}`} style={{ paddingLeft: 10 }} onClick={() => useUi.getState().select({ kind: 'trash' })}>
-              <span className="side-disclosure is-empty" />
-              <Trash2 size={16} className="side-icon" />
-              <span className="side-label">Recently Deleted</span>
-              <span className="side-count">{trash}</span>
-            </div>
-          )}
-        </div>
-        <TagsSection />
-      </div>
-      <div className="sidebar-bottom">
-        <button
-          ref={addRef}
-          className="side-new"
-          onClick={() => void newFolder()}
-          onContextMenu={(e) => {
-            e.preventDefault()
-            menuUnder(e.currentTarget, [
-              { label: 'New Folder', icon: <NotebookPen size={14} />, onClick: () => void newFolder() },
-              { label: 'New Smart Folder', icon: <FolderCog size={14} />, onClick: newSmartFolder }
-            ])
-          }}
-        >
-          <Plus size={15} /> New Folder
+      <div className="sidebar-top">
+        <span className="tb-flex" />
+        <button className="tb-btn" title="Hide Sidebar" onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
+          <PanelLeftClose size={16} />
         </button>
-        <button className="tb-btn" title="New Smart Folder" onClick={newSmartFolder}>
-          <FolderCog size={16} />
+        <button className="tb-btn" title="New Note" onClick={() => newNote()}>
+          <SquarePen size={16} />
+        </button>
+      </div>
+      <SearchField />
+      <FolderTiles />
+      <SourceSwitcher />
+      <SubFolders />
+      <NoteList />
+      <div className="sidebar-bottom">
+        <button className={`sync-pill${sync.error ? ' is-error' : ''}`} onClick={() => useUi.setState({ settings: 'sync' })} title={sync.error ?? (sync.enabled ? 'Synced with Google' : 'Sync is off')}>
+          {sync.enabled ? <Cloud size={13} /> : <CloudOff size={13} />}
+          {sync.error ? 'Sync problem' : sync.enabled ? (busy ? 'Syncing…' : 'Synced') : 'This computer'}
+        </button>
+        <span className="tb-flex" />
+        <button className={`tb-btn${trashOn ? ' is-on' : ''}`} title={trash ? `Recently Deleted (${trash})` : 'Recently Deleted'} onClick={() => useUi.getState().select(trashOn ? { kind: 'all' } : { kind: 'trash' })}>
+          <Trash2 size={15} />
         </button>
         <button className="tb-btn" title="Send Feedback" onClick={onFeedback}>
-          <MessageSquareText size={16} />
+          <MessageSquareText size={15} />
         </button>
         <button className="tb-btn" title="Settings" onClick={onSettings}>
-          <Settings size={16} />
+          <Settings size={15} />
         </button>
       </div>
     </aside>
   )
 }
+

@@ -4,7 +4,6 @@ import { ChevronDown, ChevronUp, Fingerprint, Lock, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { putDataUrl } from '../lib/attachments'
-import { noteDate } from '../lib/dates'
 import { lockedWithOldPassword, openLocked, openWithOldPassword, saveLocked, unlock, unlockWithTouchId, useLock } from '../lib/lock'
 import { desktop, openExternal } from '../lib/storage'
 import { noteById, useStore } from '../lib/store'
@@ -326,7 +325,6 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
           }
         }}
       >
-        <div className="note-date">{noteDate(note.updatedAt)}</div>
         <EditorContent editor={editor} />
       </div>
       {picker && editor && <NoteLinkPicker editor={editor} query={picker.query} at={picker.at} onClose={() => setPicker(null)} />}

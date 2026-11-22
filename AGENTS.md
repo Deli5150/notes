@@ -29,6 +29,14 @@ features and build commands.
 - Updater: GitHub Releases of Deli5150/notes; asset names must match `desktop/updater.cjs`
   (`Notes-<v>-mac.zip`, `Notes-Setup-<v>.exe`). The sheet is `src/ui/UpdateSheet.tsx` (same design
   as the user's other apps).
+- Look (user's request, 2026-11-21: "don't make it look like Apple Notes"): Arc-browser style. One
+  sidebar (`src/ui/Sidebar.tsx`): search, folders as pinned tiles with an icon (Lucide or emoji)
+  and colour (`FolderIcon.tsx`; rename, reorder by drag, drop notes on them), a switcher
+  dropdown (All Notes / Quick Notes / Unfiled / Smart Folders / Tags / Recently Deleted), then
+  the note list. The note is a raised card on the theme-tinted canvas; its toolbar is inside the
+  card. Inter is the UI font. Keep the window controls clear: macOS traffic lights (sidebar top
+  left, 76px; toolbar left 80px when the sidebar is hidden), Windows caption buttons (40px strip
+  above the card, `titleBarOverlay` height 40).
 - Themes (`src/lib/themes.ts`): CSS variables on `<html>`, light + dark per theme. The sidebar is
   see-through (macOS vibrancy, Windows 11 Mica) when `translucent` is on.
 - Commands: the native menu (main.cjs `buildMenu`) sends names to `src/ui/commands.ts`; in a

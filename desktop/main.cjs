@@ -66,9 +66,7 @@ function sniff(b) {
   return 'application/octet-stream'
 }
 
-const MAC_CSS = `
-  .sidebar-top { height: 52px; }
-`
+const MAC_CSS = ''
 
 function createWindow() {
   win = new BrowserWindow({
@@ -80,8 +78,8 @@ function createWindow() {
     show: false,
     backgroundColor: translucency ? '#00000000' : '#ffffff',
     titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 18, y: 18 },
-    titleBarOverlay: process.platform === 'win32' ? { color: '#00000000', symbolColor: '#666666', height: 52 } : undefined,
+    trafficLightPosition: { x: 16, y: 15 },
+    titleBarOverlay: process.platform === 'win32' ? { color: '#00000000', symbolColor: '#666666', height: 40 } : undefined,
     vibrancy: isMac ? 'sidebar' : undefined,
     visualEffectState: 'followWindow',
     backgroundMaterial: process.platform === 'win32' && translucency ? 'mica' : undefined,
@@ -513,7 +511,7 @@ ipcMain.on('chrome', (_e, c) => {
   if (isMac) win.setVibrancy(c.translucent ? 'sidebar' : null)
   if (process.platform === 'win32') {
     try {
-      win.setTitleBarOverlay({ color: c.bg, symbolColor: c.fg, height: 52 })
+      win.setTitleBarOverlay({ color: '#00000000', symbolColor: c.fg, height: 40 })
     } catch {}
     if (translucency) win.setBackgroundMaterial(c.translucent ? 'mica' : 'none')
   }

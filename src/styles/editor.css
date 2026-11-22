@@ -13,7 +13,7 @@
 .editor-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 10px max(28px, calc((100% - 860px) / 2)) 120px;
+  padding: 18px max(40px, calc((100% - 820px) / 2)) 120px;
   cursor: text;
   --line: calc(var(--note-size) * var(--note-line));
 }
@@ -60,12 +60,15 @@
 }
 
 .note-content h1 {
-  font-size: calc(var(--note-size) * 1.75);
-  margin: 2px 0 6px;
+  font-size: calc(var(--note-size) * 2);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  margin: 2px 0 10px;
 }
 
 .note-content h2 {
-  font-size: calc(var(--note-size) * 1.3);
+  font-size: calc(var(--note-size) * 1.35);
+  letter-spacing: -0.01em;
   margin: 12px 0 4px;
 }
 
@@ -122,9 +125,11 @@
 }
 
 .note-content blockquote {
-  margin: 4px 0;
-  padding: 0 0 0 14px;
-  border-left: 3px solid var(--faint);
+  margin: 6px 0;
+  padding: 8px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: var(--dim);
 }
 
@@ -204,10 +209,10 @@
 
 .note-content ul[data-type='taskList'] > li input[type='checkbox'] {
   appearance: none;
-  width: 1.15em;
-  height: 1.15em;
+  width: 1.1em;
+  height: 1.1em;
   margin: 0;
-  border-radius: 50%;
+  border-radius: 0.32em;
   border: 1.5px solid var(--faint);
   display: grid;
   place-items: center;

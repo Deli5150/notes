@@ -2,7 +2,7 @@ import { DEFAULT_FOLDER, QUICK_NOTES, type AppData, type Folder, type Note, type
 
 export const DEFAULT_SETTINGS: Settings = {
   appearance: 'system',
-  theme: 'classic',
+  theme: 'lavender',
   sortBy: 'edited',
   sortDir: 'desc',
   groupByDate: true,
@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sortChecked: false,
   paper: 'none',
   mathResults: 'suggest',
-  fontFamily: 'system',
+  fontFamily: 'inter',
   fontSize: 15,
   lineHeight: 1.45,
   tags: true,
@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   quickNoteShortcut: true,
   spellcheck: true,
   touchId: false,
-  sidebarWidth: 220,
+  sidebarWidth: 300,
   listWidth: 290,
   sidebarHidden: false,
   collapsedFolders: []

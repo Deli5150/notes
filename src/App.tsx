@@ -7,12 +7,12 @@ import * as lock from './lib/lock'
 import { flushSave, useStore } from './lib/store'
 import { desktop, isMac } from './lib/storage'
 import { startSync, syncNow } from './lib/syncRunner'
-import { applyTheme, systemDark } from './lib/themes'
+import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
 import { startUpdater } from './lib/updater'
 import { AttachmentsBrowser } from './ui/AttachmentsBrowser'
 import { runCommand } from './ui/commands'
-import { Gallery, NoteList } from './ui/NoteList'
+import { Gallery } from './ui/NoteList'
 import { OverlayHost, ToastHost } from './ui/overlays'
 import { SettingsWindow } from './ui/Settings'
 import { Sidebar } from './ui/Sidebar'
@@ -76,7 +76,6 @@ export default function App() {
   const sidebarHidden = useStore((s) => s.settings.sidebarHidden)
   const view = useStore((s) => s.settings.view)
   const sidebarWidth = useStore((s) => s.settings.sidebarWidth)
-  const listWidth = useStore((s) => s.settings.listWidth)
   const noteId = useUi((s) => s.noteId)
   const galleryOpen = useUi((s) => s.galleryOpen)
   const browser = useUi((s) => s.attachmentsBrowser)
@@ -138,7 +137,6 @@ export default function App() {
   if (!loaded) return <div className="app is-loading" />
 
   const setSettings = useStore.getState().setSettings
-  const showList = view === 'list' || galleryOpen
   const platform = desktop ? `is-${desktop.platform}` : 'is-web'
 
   let main: React.ReactNode
@@ -146,34 +144,29 @@ export default function App() {
   else if (view === 'gallery' && !galleryOpen) main = <Gallery />
   else
     main = (
-      <div className="panes">
-        {view === 'list' && (
-          <>
-            <NoteList width={listWidth} />
-            <Splitter value={listWidth} min={220} max={520} onChange={(v) => setSettings({ listWidth: v })} />
-          </>
-        )}
+      <>
         {view === 'gallery' && galleryOpen && (
           <button className="gallery-back" onClick={() => useUi.setState({ galleryOpen: false })}>
-            <ChevronLeft size={16} /> All notes
+            <ChevronLeft size={16} /> Gallery
           </button>
         )}
+        <Toolbar />
         <NotePane noteId={noteId} />
-      </div>
+      </>
     )
 
   return (
-    <div className={`app ${platform}${systemDark() ? ' sys-dark' : ''}`}>
+    <div className={`app ${platform}${sidebarHidden ? ' no-sidebar' : ''}`}>
       {!sidebarHidden && (
         <>
-          <Sidebar width={sidebarWidth} onSettings={() => useUi.setState({ settings: 'general' })} onFeedback={() => useUi.setState({ settings: 'feedback' })} />
-          <Splitter value={sidebarWidth} min={170} max={360} onChange={(v) => setSettings({ sidebarWidth: v })} />
+          <Sidebar width={Math.max(240, sidebarWidth)} onSettings={() => useUi.setState({ settings: 'general' })} onFeedback={() => useUi.setState({ settings: 'feedback' })} />
+          <Splitter value={sidebarWidth} min={240} max={460} onChange={(v) => setSettings({ sidebarWidth: v })} />
         </>
       )}
-      <div className="main">
-        <Toolbar listWidth={listWidth} showList={showList && view === 'list' && !browser} />
-        {main}
-      </div>
+      <main className="stage">
+        <div className="stage-drag" />
+        <div className="card">{main}</div>
+      </main>
       <SettingsWindow />
       <UpdateSheet />
       <OverlayHost />

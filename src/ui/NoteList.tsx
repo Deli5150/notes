@@ -1,4 +1,4 @@
-import { ArrowUpDown, Folder as FolderIcon, Lock, Paperclip, Pin } from 'lucide-react'
+import { Folder as FolderIcon, Lock, Paperclip, Pin } from 'lucide-react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { attachmentUrl } from '../lib/attachments'
 import { snippetOf } from '../lib/content'
@@ -9,7 +9,7 @@ import { TRASH_DAYS, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import type { Note, SortBy } from '../lib/types'
 import { deleteNotes, noteMenu } from './actions'
-import { confirm, menuUnder, showMenu } from './overlays'
+import { confirm, showMenu } from './overlays'
 import { NOTE_DRAG } from './Sidebar'
 
 // The middle column: the selected folder's notes (or tags, search results, Recently Deleted),
@@ -122,27 +122,28 @@ const NoteRow = memo(function NoteRow({
       data-id={note.id}
     >
       <div className="note-row-text">
-        <div className="note-row-title">
-          {note.locked && <Lock size={12} className="note-row-lock" />}
-          {query ? highlight(title, query) : title}
+        <div className="note-row-top">
+          <div className="note-row-title">
+            {note.pinned && <Pin size={11} className="note-row-pin" />}
+            {note.locked && <Lock size={11} className="note-row-lock" />}
+            {query ? highlight(title, query) : title}
+          </div>
+          <span className="note-row-date">{note.deletedAt ? `${daysLeft(note.deletedAt, TRASH_DAYS)}d left` : listDate(note.updatedAt)}</span>
         </div>
-        <div className="note-row-sub">
-          <span className="note-row-date">{note.deletedAt ? `${daysLeft(note.deletedAt, TRASH_DAYS)} days` : listDate(note.updatedAt)}</span>
-          <span className="note-row-snippet">
-            {!snippet && note.attachments.length ? (
-              <>
-                <Paperclip size={11} /> {note.attachments.length === 1 ? '1 attachment' : `${note.attachments.length} attachments`}
-              </>
-            ) : query ? (
-              highlight(snippet, query)
-            ) : (
-              snippet
-            )}
-          </span>
+        <div className="note-row-snippet">
+          {!snippet && note.attachments.length ? (
+            <>
+              <Paperclip size={11} /> {note.attachments.length === 1 ? '1 attachment' : `${note.attachments.length} attachments`}
+            </>
+          ) : query ? (
+            highlight(snippet, query)
+          ) : (
+            snippet
+          )}
         </div>
-        {showFolder && (
+        {showFolder && folderName && (
           <div className="note-row-folder">
-            <FolderIcon size={11} /> {folderName}
+            <FolderIcon size={10} /> {folderName}
           </div>
         )}
       </div>
@@ -151,7 +152,7 @@ const NoteRow = memo(function NoteRow({
   )
 })
 
-function listSortMenu() {
+export function listSortMenu() {
   const s = useStore.getState()
   const { sortBy, sortDir, groupByDate } = s.settings
   const set = (patch: Partial<typeof s.settings>) => s.setSettings(patch)
@@ -169,7 +170,7 @@ function listSortMenu() {
   ]
 }
 
-export function NoteList({ width }: { width: number }) {
+export function NoteList() {
   const { sections, flat, searching } = useListSections()
   const folders = useStore((s) => s.folders)
   const noteId = useUi((s) => s.noteId)
@@ -179,7 +180,7 @@ export function NoteList({ width }: { width: number }) {
   const search = useUi((s) => s.search)
   const ref = useRef<HTMLDivElement>(null)
   const flatIds = useMemo(() => flat.map((n) => n.id), [flat])
-  const folderNames = useMemo(() => new Map(folders.map((f) => [f.id, f.name])), [folders])
+  const folderNames = useMemo(() => new Map(folders.map((f) => [f.id, f.id === 'notes' ? '' : f.name])), [folders])
   const showFolder = searching || source.kind === 'all' || source.kind === 'tags' || (source.kind === 'folder' && Boolean(folders.find((f) => f.id === source.id)?.smart))
   const selectedRef = useRef(selected)
   selectedRef.current = selected
@@ -232,18 +233,7 @@ export function NoteList({ width }: { width: number }) {
 
   const count = flat.length
   return (
-    <div className="note-list" style={{ width }} tabIndex={0} ref={ref} onKeyDown={onKey} onFocus={() => useUi.setState({ focus: 'list' })}>
-      <div className="list-header">
-        <div className="list-title">
-          <div className="list-name">{searching ? 'Search' : sourceTitle()}</div>
-          <div className="list-count">{count === 1 ? '1 note' : `${count} notes`}</div>
-        </div>
-        {!searching && source.kind !== 'trash' && (
-          <button className="tb-btn" title="Sort and group" onClick={(e) => menuUnder(e.currentTarget, listSortMenu(), 'right')}>
-            <ArrowUpDown size={15} />
-          </button>
-        )}
-      </div>
+    <div className="note-list" tabIndex={0} ref={ref} onKeyDown={onKey} onFocus={() => useUi.setState({ focus: 'list' })}>
       {source.kind === 'trash' && !searching && (
         <div className="trash-banner">
           Notes are available here for {TRASH_DAYS} days. After that time, notes will be permanently deleted.
