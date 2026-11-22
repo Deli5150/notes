@@ -819,7 +819,7 @@ function AboutPage() {
           </ul>
         </Group>
       ))}
-      <div className="set-footer">Inspired by Apple Notes. Not affiliated with Apple or the makers of the other apps it imports from; their names and icons belong to them. Fonts: Inter, Lora, Merriweather, Playfair Display, Nunito, JetBrains Mono and Caveat (SIL Open Font License).</div>
+      <div className="set-footer">Not affiliated with Apple or the makers of the other apps it imports from; their names and icons belong to them. Fonts: Inter, Lora, Merriweather, Playfair Display, Nunito, JetBrains Mono and Caveat (SIL Open Font License).</div>
     </>
   )
 }

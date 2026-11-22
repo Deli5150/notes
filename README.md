@@ -8,8 +8,8 @@ A notes app with an Arc-inspired look, for **macOS** and **Windows** (Android ne
 
 ## Features
 
-- **Organise** — folders as pinned tiles with icons and colours (like Arc’s pinned tabs), nested folders, Smart Folders (by tags, dates, checklists, attachments, locked, pinned, Quick Notes, folders), #tags in the sidebar, pinned notes, Quick Notes (⌃⌥N from anywhere), Recently Deleted for 30 days, drag notes and folders around.
-- **Titles** — every note has a title field; leave it empty and ✨ Generate title suggests one from the whole note (on your computer, or with Claude using your own Anthropic API key).
+- **Organise** — folders as pinned tiles with icons and colours (like Arc’s pinned tabs), nested folders, Smart Folders (by tags, dates, checklists, attachments, locked, pinned, Quick Notes, folders), #tags in the sidebar, pinned notes, Quick Notes (a floating Quick Note above every app with ⌃⌘N, Ctrl+Alt+N on Windows), Recently Deleted for 30 days, drag notes and folders around.
+- **Titles** — every note has a title field; leave it empty and ✨ Generate title reads the whole note and suggests one (with Apple Intelligence on the Mac, on-device; or with Claude using your own Anthropic API key; or a basic title from the note’s main words).
 - **Write** — Title, Heading, Subheading, Body, Monostyled; bulleted, dashed and numbered lists; checklists (checked items can sink to the bottom); block quotes; tables; bold, italic, underline, strikethrough, super/subscript; highlights in Purple, Pink, Orange, Mint and Blue; text colours; any font on your computer, plus bundled ones; sizes, alignment, indentation; collapsible sections; Lines & Grids; links to other notes (type `>>`); find & replace; spelling.
 - **Attach** — pictures (paste, drop or pick), scanned documents and photos from your camera, sketches (pen, marker, pencil, eraser; ink follows light/dark), audio recordings, videos, PDFs with a preview, any file, and link previews.
 - **Math Notes** — type `rent = 1200` then `rent * 12 =` and the answer appears (Tab to insert, or have it inserted automatically).
