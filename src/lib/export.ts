@@ -15,8 +15,9 @@ const safeName = (s: string) => (s || 'New Note').replace(/[\\/:*?"<>|\n\r\t]+/g
 const EXT: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg', 'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'application/pdf': 'pdf', 'video/mp4': 'mp4' }
 
 async function contentOf(note: Note): Promise<string> {
-  if (!note.locked) return note.html
-  return (await openLocked(note.id))?.html ?? ''
+  const body = note.locked ? ((await openLocked(note.id))?.html ?? '') : note.html
+  // The title field goes at the top, as the document's heading.
+  return note.name?.trim() ? `<h1>${escapeHtml(note.name.trim())}</h1>${body}` : body
 }
 
 /** The note's HTML with attachments turned into something other apps understand. */

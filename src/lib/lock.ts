@@ -125,7 +125,8 @@ export async function saveLocked(id: string, html: string): Promise<void> {
   const d = derive(html)
   useLock.setState((st) => ({ open: { ...st.open, [id]: { html, text: d.text } } }))
   const locked = await sealNote(key, html, s.settings.lock.v)
-  s.updateNote(id, { locked, title: d.title, attachments: d.attachments, updatedAt: Date.now() })
+  const note = s.notes.find((n) => n.id === id)
+  s.updateNote(id, { locked, title: note?.name?.trim() || d.title, attachments: d.attachments, updatedAt: Date.now() })
 }
 
 /** Takes the lock off a note. */
@@ -133,7 +134,9 @@ export async function removeLock(id: string): Promise<void> {
   const content = await openLocked(id)
   if (!content) return
   const s = useStore.getState()
-  s.updateNote(id, { locked: undefined, html: content.html, ...derive(content.html) })
+  const n = s.notes.find((x) => x.id === id)
+  const d = derive(content.html)
+  s.updateNote(id, { locked: undefined, html: content.html, ...d, title: n?.name?.trim() || d.title })
   useLock.setState((st) => {
     const { [id]: _gone, ...open } = st.open
     return { open }

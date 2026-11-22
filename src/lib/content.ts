@@ -101,3 +101,17 @@ export function textToHtml(text: string, firstIsTitle = true): string {
     })
     .join('')
 }
+
+/** Takes a Title (heading 1) at the very start of a note out of the body, as its title. */
+export function splitTitle(html: string): { name: string; html: string } {
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
+  const first = doc.body.firstElementChild
+  if (!first || first.tagName !== 'H1' || first.querySelector('img, figure')) return { name: '', html }
+  const name = (first.textContent ?? '').replace(/\s+/g, ' ').trim()
+  if (!name) return { name: '', html }
+  first.remove()
+  return { name: name.slice(0, 300), html: doc.body.innerHTML }
+}
+
+/** The note's title: its title field, else the first line of its body. */
+export const titleFor = (name: string | undefined, derivedTitle: string): string => name?.trim() || derivedTitle

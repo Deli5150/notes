@@ -17,6 +17,7 @@ features and build commands.
   text, tags, attachments — `src/lib/content.ts`), settings. Desktop saves it to
   `userData/notes.json` (+ `.bak`). Attachments are files named by a hash of their content in
   `userData/attachments/`, served as `att://file/<id>` (main.cjs sniffs their type).
+- Titles (user's request, 2026-11-21): a separate title field above the body (`note.name`; `note.title` = name or the body's first line). Older notes had their first Title heading lifted into it on load (`withName` in store.ts), imports too (`makeNote`). Generate title: `src/lib/titles.ts` (on-device) or Claude via `desktop/ai.cjs` (user's own key in safeStorage, `claude-opus-5-5`, effort low, `fallbacks: "default"`).
 - Folders `notes` and `quick` (Quick Notes) always exist. Smart Folders are folders with `smart`
   filters (`src/lib/query.ts`). Recently Deleted = notes with `deletedAt` (purged after 30 days).
 - Locked notes (`src/lib/lock.ts`): one password; PBKDF2 → AES-GCM; content sealed in

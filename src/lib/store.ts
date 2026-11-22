@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { derive } from './content'
+import { derive, splitTitle, titleFor } from './content'
 import { DEFAULT_SETTINGS, emptyData, isSystemFolder, systemFolders, uid, welcomeNote } from './defaults'
 import { loadData, saveData } from './storage'
 import { emptyMeta, stampChanges, type SyncMeta } from './sync'
@@ -16,6 +16,7 @@ interface Store extends AppData {
   hydrate(): Promise<void>
   createNote(folderId: string, html?: string, extra?: Partial<Note>): Note
   setContent(id: string, html: string): void
+  setName(id: string, name: string): void
   updateNote(id: string, patch: Partial<Note>): void
   deleteNotes(ids: string[]): void
   recoverNotes(ids: string[]): void
@@ -56,6 +57,14 @@ export function normalize(raw: Partial<AppData>): AppData {
   return { version: 1, folders, notes, settings: { ...DEFAULT_SETTINGS, ...(raw.settings ?? {}) } }
 }
 
+/** Notes from before the title field: their first heading becomes the title. */
+function withName(n: Note): Note {
+  if (n.name !== undefined || n.locked || typeof DOMParser === 'undefined') return n.name === undefined ? { ...n, name: n.locked ? n.title : '' } : n
+  const { name, html } = splitTitle(n.html)
+  if (!name) return { ...n, name: '' }
+  return { ...n, name, html, ...derive(html), title: name }
+}
+
 const dataOf = (s: Store): AppData => ({ version: 1, folders: s.folders, notes: s.notes, settings: s.settings })
 
 /** A folder and every folder inside it. */
@@ -80,11 +89,11 @@ export const useStore = create<Store>((set, get) => ({
         const data = normalize(raw)
         // Recently Deleted keeps notes for 30 days.
         const cutoff = Date.now() - TRASH_DAYS * 86_400_000
-        data.notes = data.notes.filter((n) => !n.deletedAt || n.deletedAt > cutoff)
+        data.notes = data.notes.filter((n) => !n.deletedAt || n.deletedAt > cutoff).map(withName)
         set({ ...data, sync: { ...emptyMeta(), ...raw.sync } })
       } else {
         const w = welcomeNote()
-        set({ notes: [{ ...w, ...derive(w.html) }] })
+        set({ notes: [{ ...w, ...derive(w.html), title: w.title }] })
       }
     } catch (e) {
       console.warn('Notes: could not read saved data', e)
@@ -99,6 +108,7 @@ export const useStore = create<Store>((set, get) => ({
       id: uid(),
       folderId: folder && !folder.smart ? folderId : DEFAULT_FOLDER,
       html,
+      name: '',
       text: '',
       title: '',
       createdAt: now,
@@ -110,13 +120,24 @@ export const useStore = create<Store>((set, get) => ({
       ...(html ? derive(html) : {}),
       ...extra
     }
+    note.title = titleFor(note.name, html ? derive(html).title : '')
     set((s) => ({ notes: [note, ...s.notes] }))
     return note
   },
 
   setContent(id, html) {
     const d = derive(html)
-    set((s) => ({ notes: s.notes.map((n) => (n.id === id && n.html !== html ? { ...n, ...d, html, updatedAt: Date.now() } : n)) }))
+    set((s) => ({ notes: s.notes.map((n) => (n.id === id && n.html !== html ? { ...n, ...d, title: titleFor(n.name, d.title), html, updatedAt: Date.now() } : n)) }))
+  },
+
+  setName(id, name) {
+    set((s) => ({
+      notes: s.notes.map((n) => {
+        if (n.id !== id || n.name === name) return n
+        const derived = n.locked ? '' : derive(n.html).title
+        return { ...n, name, title: titleFor(name, derived) || (n.locked ? n.title : ''), updatedAt: Date.now() }
+      })
+    }))
   },
 
   updateNote(id, patch) {

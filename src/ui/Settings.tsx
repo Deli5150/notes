@@ -293,10 +293,80 @@ function TextPage() {
           />
         </Row>
       </Group>
+      <TitlesGroup />
       <div className="font-preview" style={{ fontFamily: fontCss(s.fontFamily), fontSize: s.fontSize, lineHeight: s.lineHeight }}>
         <strong>The quick brown fox</strong> jumps over the lazy dog. Notes keeps your thoughts in order — and your lists checked.
       </div>
     </>
+  )
+}
+
+function TitlesGroup() {
+  const engine = useStore((s) => s.settings.titleEngine)
+  const [hasKey, setHasKey] = useState<boolean | null>(null)
+  const [key, setKey] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    void desktop?.ai.hasKey().then(setHasKey)
+  }, [])
+  if (!desktop) return null
+  const save = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      await desktop!.ai.setKey(key.trim())
+      // Check it works with a tiny note.
+      await desktop!.ai.title('Shopping list: milk, eggs, bread')
+      setHasKey(true)
+      setKey('')
+      set({ titleEngine: 'claude' })
+      toast('Claude will write your titles')
+    } catch (e) {
+      await desktop!.ai.setKey(null)
+      setHasKey(false)
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Group
+      title="Generate title"
+      footer="When a note has no title, the ✨ Generate title button under the title field suggests one from the whole note. On this computer, Notes picks the note’s main words. With Claude, the note’s text is sent to Anthropic with your own API key (from console.anthropic.com), which is kept encrypted on this computer and never synced."
+    >
+      <Row label="Write titles with">
+        <Select<'local' | 'claude'>
+          value={engine === 'claude' && hasKey ? 'claude' : 'local'}
+          options={[
+            ['local', 'This computer (basic)'],
+            ['claude', hasKey ? 'Claude' : 'Claude (add a key below)']
+          ]}
+          onChange={(v) => set({ titleEngine: v })}
+        />
+      </Row>
+      {hasKey ? (
+        <Row label="Anthropic API key" sub="Saved on this computer.">
+          <button
+            className="btn"
+            onClick={async () => {
+              await desktop!.ai.setKey(null)
+              setHasKey(false)
+              set({ titleEngine: 'local' })
+            }}
+          >
+            Remove Key
+          </button>
+        </Row>
+      ) : (
+        <Row label="Anthropic API key" sub={error || 'Paste a key to let Claude write titles.'}>
+          <input className="field is-key" type="password" placeholder="sk-ant-…" value={key} onChange={(e) => setKey(e.target.value)} />
+          <button className="btn btn-primary" disabled={!key.trim() || busy} onClick={() => void save()}>
+            {busy ? 'Checking…' : 'Save'}
+          </button>
+        </Row>
+      )}
+    </Group>
   )
 }
 

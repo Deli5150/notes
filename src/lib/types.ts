@@ -11,7 +11,9 @@ export interface Note {
   html: string
   /** Plain text of the content, for search and the list's preview. Empty while locked. */
   text: string
-  /** The first line (or "New Note"); kept visible when the note is locked, as in Apple Notes. */
+  /** What the title field says (the body then has no title line). Missing on notes from before it. */
+  name?: string
+  /** The title shown everywhere: the name, else the body's first line. Visible while locked. */
   title: string
   createdAt: number
   updatedAt: number
@@ -125,6 +127,10 @@ export interface Settings {
   sidebarHidden: boolean
   lastSeenVersion?: string
   collapsedFolders: string[]
+  /** The pinned folders section is folded away. */
+  foldersCollapsed: boolean
+  /** Generate title: on this computer, or with Claude (needs an API key on this computer). */
+  titleEngine: 'local' | 'claude'
 }
 
 export interface AppData {

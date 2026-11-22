@@ -6,6 +6,7 @@ const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const updater = require('./updater.cjs')
 const google = require('./google.cjs')
+const ai = require('./ai.cjs')
 const { version } = require('./package.json')
 
 // Notes' desktop shell: the app's web build (web/, from `vite build`) served over app://, its data
@@ -556,6 +557,12 @@ ipcMain.handle('google:sign-in', () => google.signIn())
 ipcMain.handle('google:sign-out', () => google.signOut())
 ipcMain.handle('google:fetch', (_e, url, init) => google.authFetch(url, init))
 ipcMain.handle('google:fetch-bytes', (_e, url, init) => google.authFetchBytes(url, init))
+
+// ── Titles with Claude ───────────────────────────────────────────────────────────────────────
+
+ipcMain.handle('ai:has-key', () => ai.hasKey())
+ipcMain.handle('ai:set-key', (_e, key) => ai.saveKey(key ? String(key).trim() : null))
+ipcMain.handle('ai:title', (_e, text) => ai.title(String(text ?? '')))
 
 // ── Updates ──────────────────────────────────────────────────────────────────────────────────
 

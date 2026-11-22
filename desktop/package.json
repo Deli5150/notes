@@ -11,7 +11,9 @@
     "start": "electron .",
     "dist": "electron-builder"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0"
+  },
   "devDependencies": {
     "electron": "45.0.0",
     "electron-builder": "26.18.0"
@@ -29,6 +31,7 @@
       "preload.cjs",
       "updater.cjs",
       "google.cjs",
+      "ai.cjs",
       "google.json",
       "web/**",
       "package.json"

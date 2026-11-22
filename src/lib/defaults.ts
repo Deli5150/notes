@@ -23,7 +23,9 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarWidth: 300,
   listWidth: 290,
   sidebarHidden: false,
-  collapsedFolders: []
+  collapsedFolders: [],
+  foldersCollapsed: false,
+  titleEngine: 'local'
 }
 
 export const systemFolders = (now = Date.now()): Folder[] => [
@@ -33,8 +35,7 @@ export const systemFolders = (now = Date.now()): Folder[] => [
 
 export const isSystemFolder = (id: string): boolean => id === QUICK_NOTES || id === DEFAULT_FOLDER
 
-const WELCOME = `<h1>Welcome to Notes</h1>
-<p>Notes keeps your thoughts, lists and pictures together, and syncs them with your Google account.</p>
+const WELCOME = `<p>Notes keeps your thoughts, lists and pictures together, and syncs them with your Google account.</p>
 <h2>Make it yours</h2>
 <p>Use the <strong>Aa</strong> button for a <strong>Title</strong>, <strong>Heading</strong>, <strong>Subheading</strong>, <code>Monostyled</code> text, lists and block quotes — or <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <s>strikethrough</s> and <mark data-color="yellow">highlights</mark>.</p>
 <ul data-type="taskList"><li data-type="taskItem" data-checked="true"><p>Make a checklist</p></li><li data-type="taskItem" data-checked="false"><p>Add a table, a sketch, a recording or a picture</p></li><li data-type="taskItem" data-checked="false"><p>Tag notes with #ideas and find them in the sidebar</p></li></ul>
@@ -49,6 +50,7 @@ export function welcomeNote(now = Date.now()): Note {
     id: `welcome-${now.toString(36)}`,
     folderId: DEFAULT_FOLDER,
     html: WELCOME,
+    name: 'Welcome to Notes',
     text: '',
     title: 'Welcome to Notes',
     createdAt: now,

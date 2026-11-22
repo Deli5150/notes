@@ -162,17 +162,36 @@ function Tile({ folder, count }: { folder: Folder; count: number }) {
 
 function FolderTiles() {
   const folders = useStore(useShallow((s) => s.folders))
+  const collapsed = useStore((s) => s.settings.foldersCollapsed)
   const { counts } = useCounts()
   const tiles = useMemo(() => folders.filter((f) => !f.parentId && !isSystemFolder(f.id) && !f.smart).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)), [folders])
+  const toggle = () => useStore.getState().setSettings({ foldersCollapsed: !collapsed })
+  // No folders yet: just a slim header with its + button.
+  const open = tiles.length > 0 && !collapsed
   return (
-    <div className="tiles">
-      {tiles.map((f) => (
-        <Tile key={f.id} folder={f} count={folderTree(folders, f.id).reduce((n, id) => n + (counts.get(id) ?? 0), 0)} />
-      ))}
-      <button className="tile is-add" title="New Folder" onClick={() => void newFolder()}>
-        <Plus size={18} />
-        <div className="tile-name">New Folder</div>
-      </button>
+    <div className={`folders${open ? ' is-open' : ''}`}>
+      <div className="folders-head">
+        {tiles.length > 0 ? (
+          <button className="folders-toggle" onClick={toggle} title={collapsed ? 'Show folders' : 'Hide folders'} aria-expanded={!collapsed}>
+            <ChevronDown size={13} className={`folders-chevron${collapsed ? ' is-collapsed' : ''}`} />
+            Folders
+            <span className="folders-count">{tiles.length}</span>
+          </button>
+        ) : (
+          <span className="folders-toggle is-static">Folders</span>
+        )}
+        <span className="tb-flex" />
+        <button className="tb-btn is-small" title="New Folder" onClick={() => void newFolder()}>
+          <Plus size={14} />
+        </button>
+      </div>
+      {open && (
+        <div className="tiles">
+          {tiles.map((f) => (
+            <Tile key={f.id} folder={f} count={folderTree(folders, f.id).reduce((n, id) => n + (counts.get(id) ?? 0), 0)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

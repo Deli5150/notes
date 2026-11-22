@@ -49,6 +49,11 @@ export interface DesktopBridge {
     save(password: string | null): Promise<void>
     unlock(reason: string): Promise<string | null>
   }
+  ai: {
+    hasKey(): Promise<boolean>
+    setKey(key: string | null): Promise<void>
+    title(text: string): Promise<string>
+  }
   google: {
     configured: boolean
     signIn(): Promise<string | undefined>

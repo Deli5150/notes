@@ -1,6 +1,8 @@
 import type { Editor as TEditor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { ChevronDown, ChevronUp, Fingerprint, Lock, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Fingerprint, Loader2, Lock, Sparkles, X } from 'lucide-react'
+import { generateTitle } from '../lib/titles'
+import { toast } from '../ui/overlays'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { putDataUrl } from '../lib/attachments'
@@ -17,7 +19,8 @@ import { fontCss, insertFiles, insertLinkPreview, noteExtensions } from './setup
 /** The editor of the open note, for the toolbar and menus. */
 export const useEditorRef = create<{ editor: TEditor | null; noteId: string | null }>(() => ({ editor: null, noteId: null }))
 
-const START_HTML = { title: '<h1></h1>', heading: '<h2></h2>', subheading: '<h3></h3>', body: '<p></p>' }
+// The title has its own field now; "title" starts the body as plain text.
+const START_HTML = { title: '<p></p>', heading: '<h2></h2>', subheading: '<h3></h3>', body: '<p></p>' }
 
 export function startHtml(): string {
   return START_HTML[useStore.getState().settings.startWith]
@@ -183,6 +186,94 @@ function FindBar({ editor }: { editor: TEditor }) {
   )
 }
 
+/** The note's title, above its body. Empty: offers to write one from what the note says. */
+function TitleField({ note, editor, readOnly }: { note: Note; editor: TEditor | null; readOnly: boolean }) {
+  const [value, setValue] = useState(note.name ?? '')
+  const [busy, setBusy] = useState(false)
+  const [, setTick] = useState(0)
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const engine = useStore((s) => s.settings.titleEngine)
+  const focused = useRef(false)
+
+  // Changed elsewhere (Sync, Generate): show it unless it's being typed in.
+  useEffect(() => {
+    if (!focused.current) setValue(note.name ?? '')
+  }, [note.name])
+
+  // Grow with the text.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = '0px'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+
+  // Show the Generate button once the body has words in it.
+  useEffect(() => {
+    if (!editor) return
+    const update = () => setTick((n) => n + 1)
+    editor.on('update', update)
+    return () => {
+      editor.off('update', update)
+    }
+  }, [editor])
+
+  const bodyText = () => (editor && !editor.isDestroyed ? editor.getText({ blockSeparator: '\n' }) : note.text).trim()
+  const canGenerate = !readOnly && !value.trim() && bodyText().length > 0
+
+  const generate = async () => {
+    const text = bodyText()
+    if (!text) return
+    setBusy(true)
+    try {
+      const title = await generateTitle(text, engine)
+      if (!title) return toast('There isn’t enough in the note to title it yet')
+      setValue(title)
+      useStore.getState().setName(note.id, title)
+    } catch (e) {
+      toast((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="title-field">
+      <textarea
+        ref={ref}
+        className="title-input"
+        rows={1}
+        placeholder="Title"
+        value={value}
+        readOnly={readOnly}
+        autoFocus={!readOnly && !note.name && !note.text.trim()}
+        spellCheck={false}
+        onFocus={() => (focused.current = true)}
+        onBlur={() => (focused.current = false)}
+        onChange={(e) => {
+          const v = e.target.value.replace(/\n/g, ' ')
+          setValue(v)
+          useStore.getState().setName(note.id, v)
+        }}
+        onKeyDown={(e) => {
+          const el = e.currentTarget
+          // Enter (or ↓ at the end) carries on into the body.
+          if (e.key === 'Enter' || (e.key === 'ArrowDown' && el.selectionStart === el.value.length)) {
+            e.preventDefault()
+            editor?.commands.focus('start')
+          }
+        }}
+      />
+      {canGenerate && (
+        <button className="title-generate" onClick={() => void generate()} disabled={busy} title={engine === 'claude' ? 'Claude reads the note and suggests a title' : 'Suggests a title from what the note says'}>
+          {busy ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
+          {busy ? 'Writing a title…' : 'Generate title'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOnly: boolean }) {
   const settings = useStore((s) => s.settings)
   const findOpen = useUi((s) => s.findOpen)
@@ -207,9 +298,22 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
       extensions: noteExtensions(),
       content: html || startHtml(),
       editable: !readOnly,
-      autofocus: !html || html === startHtml() ? 'start' : false,
+      autofocus: false,
       editorProps: {
         attributes: { class: 'note-content', spellcheck: String(settings.spellcheck) },
+        handleKeyDown(view, event) {
+          // ↑ at the very start of the body goes back up to the title.
+          if (event.key === 'ArrowUp' && view.state.selection.empty && view.state.selection.from <= 1) {
+            const title = view.dom.closest('.editor-scroll')?.querySelector<HTMLTextAreaElement>('.title-input')
+            if (title) {
+              event.preventDefault()
+              title.focus()
+              title.setSelectionRange(title.value.length, title.value.length)
+              return true
+            }
+          }
+          return false
+        },
         handlePaste(view, event) {
           const files = [...(event.clipboardData?.files ?? [])]
           if (files.length) {
@@ -325,6 +429,7 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
           }
         }}
       >
+        <TitleField note={note} editor={editor} readOnly={readOnly} />
         <EditorContent editor={editor} />
       </div>
       {picker && editor && <NoteLinkPicker editor={editor} query={picker.query} at={picker.at} onClose={() => setPicker(null)} />}

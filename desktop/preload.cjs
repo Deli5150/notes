@@ -33,6 +33,11 @@ contextBridge.exposeInMainWorld('notesApp', {
     save: (password) => ipcRenderer.invoke('touchid:save', password),
     unlock: (reason) => ipcRenderer.invoke('touchid:unlock', reason)
   },
+  ai: {
+    hasKey: () => ipcRenderer.invoke('ai:has-key'),
+    setKey: (key) => ipcRenderer.invoke('ai:set-key', key),
+    title: (text) => ipcRenderer.invoke('ai:title', text)
+  },
   google: {
     configured: ipcRenderer.sendSync('google:configured'),
     signIn: () => ipcRenderer.invoke('google:sign-in'),

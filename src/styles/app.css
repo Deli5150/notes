@@ -231,11 +231,70 @@ select {
 }
 
 /* Pinned folder tiles */
+.folders {
+  flex: none;
+  margin-bottom: 8px;
+}
+
+.folders.is-open {
+  margin-bottom: 12px;
+}
+
+.folders-head {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 2px 0 4px;
+}
+
+.folders-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 6px 0 4px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.folders-toggle:not(.is-static):hover {
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  color: var(--text);
+}
+
+.folders-toggle.is-static {
+  padding-left: 6px;
+}
+
+.folders-chevron {
+  transition: transform 0.15s;
+}
+
+.folders-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+.folders-count {
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--faint);
+}
+
+.tb-btn.is-small {
+  height: 24px;
+  min-width: 24px;
+  padding: 0 4px;
+}
+
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   gap: 6px;
-  margin-bottom: 14px;
+  margin-top: 4px;
   flex: none;
   max-height: 40vh;
   overflow-y: auto;
@@ -2186,4 +2245,8 @@ kbd {
 
 .link-picker {
   min-width: 260px;
+}
+
+.field.is-key {
+  width: 220px;
 }

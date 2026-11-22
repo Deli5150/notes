@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import type { Source } from './query'
-import { DEFAULT_FOLDER } from './types'
 
 // What's selected and open on screen (not saved with your notes).
 
@@ -28,7 +27,7 @@ interface UiState {
 }
 
 export const useUi = create<UiState>((set, get) => ({
-  source: { kind: 'folder', id: DEFAULT_FOLDER },
+  source: { kind: 'all' },
   noteId: null,
   selected: [],
   search: '',

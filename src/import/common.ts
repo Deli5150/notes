@@ -1,7 +1,7 @@
 import { generateHTML, generateJSON } from '@tiptap/core'
 import { marked } from 'marked'
 import { mimeOf, putAttachment, putDataUrl } from '../lib/attachments'
-import { derive, escapeHtml } from '../lib/content'
+import { derive, escapeHtml, splitTitle } from '../lib/content'
 import { uid } from '../lib/defaults'
 import { DEFAULT_FOLDER, type Folder, type Note } from '../lib/types'
 
@@ -143,6 +143,9 @@ export function makeNote(p: { html: string; folderId?: string; created?: number;
   const d0 = derive(html)
   const extra = (p.tags ?? []).map((t) => t.trim().replace(/\s+/g, '-').replace(/^#/, '')).filter((t) => t && !d0.tags.some((x) => x.toLowerCase() === t.toLowerCase()))
   if (extra.length) html += `<p>${extra.map((t) => `#${escapeHtml(t)}`).join(' ')}</p>`
+  // The note's first heading becomes its title field.
+  const split = splitTitle(html)
+  html = split.html
   const d = derive(html)
   const now = Date.now()
   const created = p.created && Number.isFinite(p.created) ? p.created : now
@@ -151,6 +154,8 @@ export function makeNote(p: { html: string; folderId?: string; created?: number;
     folderId: p.folderId ?? DEFAULT_FOLDER,
     html,
     ...d,
+    name: split.name,
+    title: split.name || d.title,
     createdAt: created,
     updatedAt: p.updated && Number.isFinite(p.updated) ? p.updated : created,
     pinned: Boolean(p.pinned)

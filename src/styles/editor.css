@@ -963,3 +963,50 @@
 .dot.is-none {
   background: linear-gradient(135deg, transparent 45%, #ff453a 45% 55%, transparent 55%), var(--text);
 }
+
+/* The title field above the body */
+.title-field {
+  margin: 4px 0 10px;
+}
+
+.title-input {
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--note-font);
+  font-size: calc(var(--note-size) * 2.1);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  caret-color: var(--accent);
+  user-select: text;
+}
+
+.title-input::placeholder {
+  color: var(--faint);
+}
+
+.title-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  cursor: pointer;
+}
+
+.title-generate:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
