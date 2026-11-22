@@ -22,6 +22,9 @@ interface UiState {
   /** A folder being renamed in the sidebar. */
   renaming: string | null
   findOpen: boolean
+  /** The open note was closed (⌘W), so the list doesn't open another one by itself. */
+  closed: boolean
+  close(): void
   select(source: Source): void
   open(id: string | null, extend?: 'toggle' | 'range' | null, list?: string[]): void
 }
@@ -38,11 +41,16 @@ export const useUi = create<UiState>((set, get) => ({
   attachmentsBrowser: false,
   renaming: null,
   findOpen: false,
+  closed: false,
+  close() {
+    set({ noteId: null, selected: [], galleryOpen: false, findOpen: false, closed: true })
+  },
   select(source) {
-    set({ source, galleryOpen: false, attachmentsBrowser: false, search: '', searching: false })
+    set({ source, closed: false, galleryOpen: false, attachmentsBrowser: false, search: '', searching: false })
   },
   open(id, extend, list = []) {
     if (!id) return set({ noteId: null, selected: [] })
+    if (get().closed) set({ closed: false })
     const { selected, noteId } = get()
     if (extend === 'toggle') {
       const next = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]

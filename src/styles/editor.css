@@ -747,6 +747,25 @@
 /* Locked note / empty */
 .editor-pane.is-empty {
   background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--faint);
+  font-size: 15px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.empty-hint span {
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .locked {

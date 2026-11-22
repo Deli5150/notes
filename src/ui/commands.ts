@@ -2,6 +2,7 @@ import { useEditorRef } from '../editor/Editor'
 import { STYLES } from './FormatPanel'
 import { useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
+import { desktop } from '../lib/storage'
 import type { Paper, SortBy } from '../lib/types'
 import {
   addFromCamera,
@@ -43,6 +44,11 @@ export function runCommand(cmd: string, arg?: string): void {
   switch (cmd) {
     case 'new-note':
       newNote()
+      break
+    case 'close-note':
+      // ⌘W closes the open note, then the window.
+      if (useUi.getState().noteId) useUi.getState().close()
+      else desktop?.closeWindow()
       break
     case 'new-quick-note':
       newQuickNote()

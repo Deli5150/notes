@@ -218,7 +218,10 @@ function buildMenu() {
         cmd('Print…', 'print', 'CmdOrCtrl+P'),
         { type: 'separator' },
         cmd('Delete Note', 'delete'),
-        ...(isMac ? [{ type: 'separator' }, { role: 'close' }] : [{ type: 'separator' }, cmd('Settings…', 'settings', 'Ctrl+,'), { role: 'quit' }])
+        { type: 'separator' },
+        cmd('Close Note', 'close-note', 'CmdOrCtrl+W'),
+        { role: 'close', accelerator: 'Shift+CmdOrCtrl+W' },
+        ...(isMac ? [] : [{ type: 'separator' }, cmd('Settings…', 'settings', 'Ctrl+,'), { role: 'quit' }])
       ]
     },
     {
@@ -412,6 +415,7 @@ ipcMain.handle('print', async (_e, html) => {
   done()
 })
 
+ipcMain.on('close-window', (e) => BrowserWindow.fromWebContents(e.sender)?.close())
 ipcMain.on('open-external', (_e, url) => {
   if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
 })

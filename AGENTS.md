@@ -39,7 +39,9 @@ features and build commands.
   left, 76px; toolbar left 80px when the sidebar is hidden), Windows caption buttons (40px strip
   above the card, `titleBarOverlay` height 40).
 - Themes (`src/lib/themes.ts`): CSS variables on `<html>`, light + dark per theme. The sidebar is
-  see-through (macOS vibrancy, Windows 11 Mica) when `translucent` is on.
+  see-through (macOS vibrancy, Windows 11 Mica) when `translucent` is on. A theme with `style`
+  (Nothing, Pixel) also sets `<html data-style>`, and app.css's "Theme looks" section changes its
+  fonts and shapes (Doto + Space Mono, Google Sans Flex; all bundled from @fontsource).
 - Commands: the native menu (main.cjs `buildMenu`) sends names to `src/ui/commands.ts`; in a
   plain browser App.tsx maps shortcuts to the same names.
 - Importers (`src/import/`): each app's export format → HTML run through the editor's schema

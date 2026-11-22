@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { putDataUrl } from '../lib/attachments'
 import { lockedWithOldPassword, openLocked, openWithOldPassword, saveLocked, unlock, unlockWithTouchId, useLock } from '../lib/lock'
-import { desktop, openExternal } from '../lib/storage'
+import { desktop, isMac, openExternal } from '../lib/storage'
 import { noteById, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, type Note } from '../lib/types'
@@ -497,7 +497,15 @@ export function NotePane({ noteId }: { noteId: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?.id, Boolean(note?.locked), key, Boolean(opened)])
 
-  if (!note) return <div className="editor-pane is-empty" />
+  if (!note)
+    return (
+      <div className="editor-pane is-empty">
+        <div className="empty-hint">
+          No note open
+          <span>{isMac ? '⌘' : 'Ctrl+'}T for a new note</span>
+        </div>
+      </div>
+    )
   if (note.locked) {
     if (!opened && (!content || content.id !== note.id)) return <LockedNote note={note} />
     return <NoteEditor key={note.id} note={note} html={opened?.html ?? content?.html ?? ''} readOnly={Boolean(note.deletedAt)} />

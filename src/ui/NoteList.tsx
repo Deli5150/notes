@@ -187,7 +187,7 @@ export function NoteList() {
 
   // Keep a note open: the first one when the open note isn't in the list.
   useEffect(() => {
-    if (searching) return
+    if (searching || (useUi.getState().closed && !noteId)) return
     if (!noteId || !flatIds.includes(noteId)) useUi.getState().open(flatIds[0] ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flatIds, searching])

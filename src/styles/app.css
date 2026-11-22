@@ -2250,3 +2250,112 @@ kbd {
 .field.is-key {
   width: 220px;
 }
+
+
+/* No note open: only the More menu stays. */
+.toolbar.is-empty .tb-group:not(:last-of-type),
+.toolbar.is-empty .tb-group .tb-btn:not(:last-child) {
+  display: none;
+}
+
+/* ── Theme looks: Nothing and Pixel change fonts and shapes as well as colours ─────────────── */
+
+/* Nothing: flat black and white on a dot grid, dot-matrix titles, uppercase mono labels, one red. */
+:root[data-style='nothing'] .app,
+:root[data-style='nothing'][data-translucent='yes'] .app {
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--text) 14%, transparent) 1px, transparent 1.4px) 0 0 / 12px 12px,
+    var(--sidebar-solid);
+}
+
+:root[data-style='nothing'] .card {
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px var(--sep);
+}
+
+:root[data-style='nothing'] .title-input,
+:root[data-style='nothing'] .note-content h1 {
+  font-family: Doto, var(--note-font);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+:root[data-style='nothing'] .folders-toggle,
+:root[data-style='nothing'] .switcher-label,
+:root[data-style='nothing'] .note-row-date,
+:root[data-style='nothing'] .note-row-folder,
+:root[data-style='nothing'] .chip {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:root[data-style='nothing'] .note-row.is-selected,
+:root[data-style='nothing'] .note-row.is-selected-dim {
+  box-shadow: 0 0 0 1px var(--sep);
+}
+
+:root[data-style='nothing'] .note-row.is-selected {
+  box-shadow: 0 0 0 1.5px var(--text);
+}
+
+:root[data-style='nothing'] .tile.is-active {
+  background: var(--select);
+  color: var(--on-select);
+}
+
+/* Pixel: Material You's tonal surfaces, Google Sans, and big round corners. */
+:root[data-style='pixel'] {
+  --ui-font: 'Google Sans Flex Variable', 'Google Sans', Roboto, system-ui, sans-serif;
+}
+
+:root[data-style='pixel'] .app,
+:root[data-style='pixel'][data-translucent='yes'] .app {
+  background: var(--sidebar-solid);
+}
+
+:root[data-style='pixel'] .card {
+  border-radius: 28px;
+  box-shadow: none;
+}
+
+:root[data-style='pixel'] .title-input,
+:root[data-style='pixel'] .note-content h1 {
+  font-family: 'Google Sans Flex Variable', var(--note-font);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+:root[data-style='pixel'] .note-row {
+  border-radius: 20px;
+  padding: 10px 14px;
+}
+
+:root[data-style='pixel'] .note-row.is-selected,
+:root[data-style='pixel'] .note-row.is-selected-dim {
+  background: var(--select);
+  color: var(--on-select);
+  box-shadow: none;
+}
+
+:root[data-style='pixel'] .note-row.is-selected-dim {
+  background: var(--select-dim);
+  color: inherit;
+}
+
+:root[data-style='pixel'] .tb-btn,
+:root[data-style='pixel'] .chip,
+:root[data-style='pixel'] .search-field,
+:root[data-style='pixel'] .switcher {
+  border-radius: 999px;
+}
+
+:root[data-style='pixel'] .tile {
+  border-radius: 16px;
+}
+
+:root[data-style='pixel'] .tile.is-active {
+  background: var(--select);
+  color: var(--on-select);
+}

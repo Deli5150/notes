@@ -33,6 +33,8 @@ export interface Theme {
   name: string
   light: Palette
   dark: Palette
+  /** A whole look, not just colours: its own fonts and shapes (app.css, [data-style]). */
+  style?: 'nothing' | 'pixel'
 }
 
 const LIGHT: Omit<Palette, 'accent' | 'onAccent' | 'tag' | 'select' | 'onSelect'> = {
@@ -100,6 +102,22 @@ export const THEMES: Theme[] = [
     light: { bg: '#fffafc', list: '#fdf2f6', sidebar: 'rgba(250,224,234,0.66)', sidebarSolid: '#f8e1ea' },
     dark: { bg: '#1f171a', list: '#251b1f', sidebar: 'rgba(46,30,36,0.64)', sidebarSolid: '#2e1e24' }
   }),
+  {
+    // Nothing OS: black and white, one red, dot-matrix titles and mono labels.
+    ...theme('nothing', 'Nothing', ['#d71921', '#ffffff'], ['#e8222c', '#ffffff'], {
+      light: { bg: '#ffffff', list: '#ffffff', sidebarSolid: '#f0f0f0', sidebar: 'rgba(240,240,240,0.7)', text: '#000000', dim: '#6b6b6b', faint: '#a8a8a8', select: '#000000', onSelect: '#ffffff', tag: '#d71921', menu: 'rgba(250,250,250,0.97)' },
+      dark: { bg: '#000000', list: '#000000', sidebarSolid: '#111111', sidebar: 'rgba(17,17,17,0.8)', text: '#ffffff', dim: '#8c8c8c', faint: '#555555', sep: 'rgba(255,255,255,0.12)', select: '#ffffff', onSelect: '#000000', tag: '#e8222c', menu: 'rgba(24,24,24,0.97)', paperLine: 'rgba(255,255,255,0.12)' }
+    }),
+    style: 'nothing'
+  },
+  {
+    // Pixel (Material You): soft tonal surfaces, Google blue, round shapes, Google Sans.
+    ...theme('pixel', 'Pixel', ['#0b57d0', '#ffffff'], ['#a8c7fa', '#062e6f'], {
+      light: { bg: '#ffffff', list: '#ffffff', sidebarSolid: '#e9eef6', sidebar: 'rgba(233,238,246,0.75)', text: '#1f1f1f', dim: '#444746', faint: '#8e918f', select: '#d3e3fd', onSelect: '#041e49', selectDim: '#e1e5ea', sep: 'rgba(31,31,31,0.1)', hover: 'rgba(11,87,208,0.06)', field: '#ffffff', menu: 'rgba(240,244,249,0.97)' },
+      dark: { bg: '#131314', list: '#131314', sidebarSolid: '#1e1f20', sidebar: 'rgba(30,31,32,0.8)', text: '#e3e3e3', dim: '#c4c7c5', faint: '#8e918f', select: '#004a77', onSelect: '#c2e7ff', selectDim: '#2d2f31', sep: 'rgba(227,227,227,0.1)', hover: 'rgba(168,199,250,0.08)', field: '#282a2c', menu: 'rgba(40,42,44,0.97)' }
+    }),
+    style: 'pixel'
+  },
   theme('nord', 'Nord', ['#5e81ac', '#ffffff'], ['#88c0d0', '#1b2230'], {
     light: { bg: '#eceff4', list: '#e5e9f0', sidebar: 'rgba(216,222,233,0.75)', sidebarSolid: '#d8dee9', text: '#2e3440', dim: '#4c566a' },
     dark: { bg: '#2e3440', list: '#323947', sidebar: 'rgba(59,66,82,0.7)', sidebarSolid: '#3b4252', text: '#eceff4', dim: '#a3acbd', faint: '#6b7487', menu: 'rgba(59,66,82,0.97)' }
@@ -125,5 +143,8 @@ export function applyTheme(id: string, appearance: Appearance, translucent: bool
   root.dataset.theme = dark ? 'dark' : 'light'
   root.style.colorScheme = dark ? 'dark' : 'light'
   root.dataset.translucent = translucent ? 'yes' : 'no'
+  const style = themeById(id).style
+  if (style) root.dataset.style = style
+  else delete root.dataset.style
   return p
 }

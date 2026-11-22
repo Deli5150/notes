@@ -83,7 +83,7 @@ export function Toolbar() {
   const noteEditable = Boolean(editor && note && !note.deletedAt)
 
   return (
-    <div className="toolbar">
+    <div className={`toolbar${note ? '' : ' is-empty'}`}>
       {sidebarHidden && (
         <>
           <button className="tb-btn" title={`Show Sidebar (${MOD}S)`} onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>

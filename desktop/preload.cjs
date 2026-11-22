@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('notesApp', {
   print: (html) => ipcRenderer.invoke('print', html),
   appleNotes: () => ipcRenderer.invoke('apple-notes'),
   linkPreview: (url) => ipcRenderer.invoke('link-preview', url),
+  closeWindow: () => ipcRenderer.send('close-window'),
   openExternal: (url) => ipcRenderer.send('open-external', url),
   setChrome: (c) => ipcRenderer.send('chrome', c),
   setQuickNoteShortcut: (on) => ipcRenderer.send('quick-note-shortcut', on),

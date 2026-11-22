@@ -17,13 +17,16 @@
     "icons": "desktop/node_modules/.bin/electron scripts/render-icons.cjs"
   },
   "dependencies": {
+    "@fontsource-variable/google-sans-flex": "^5.3.2",
     "@fontsource/caveat": "^5.3.0",
+    "@fontsource/doto": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/lora": "^5.3.0",
     "@fontsource/merriweather": "^5.3.0",
     "@fontsource/nunito": "^5.3.0",
     "@fontsource/playfair-display": "^5.3.0",
+    "@fontsource/space-mono": "^5.3.0",
     "@tiptap/extension-highlight": "^3.35.0",
     "@tiptap/extension-image": "^3.35.0",
     "@tiptap/extension-list": "^3.35.0",

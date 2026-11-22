@@ -40,6 +40,7 @@ export interface DesktopBridge {
   appleNotes(): Promise<{ folders: Array<{ id: string; name: string; parent?: string }>; notes: Array<{ id: string; folder: string; name: string; body: string; created: number; modified: number; locked: boolean }> }>
   linkPreview(url: string): Promise<LinkPreview | null>
   openExternal(url: string): void
+  closeWindow(): void
   setChrome(colors: { bg: string; fg: string; dark: boolean; translucent: boolean }): void
   setQuickNoteShortcut(on: boolean): void
   setSpellcheck(on: boolean): void
