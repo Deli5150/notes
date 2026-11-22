@@ -1,4 +1,4 @@
-import { Bug, Check, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
+import { Bug, Check, FileText, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
@@ -569,6 +569,10 @@ function SyncPage() {
   )
 }
 
+// Each app's own icon (from its App Store or Google Play listing; Apple Notes' from the Mac).
+const IMPORT_ICONS: Record<string, string> = import.meta.glob('../assets/import/*.png', { eager: true, import: 'default', query: '?url' })
+const importIcon = (id: string): string | undefined => IMPORT_ICONS[`../assets/import/${id}.png`]
+
 const IMPORTERS: Array<{ id: string; name: string; how: string; accept: string; color: string }> = [
   { id: 'apple', name: 'Apple Notes', how: 'Reads your notes straight from the Notes app on this Mac. On Windows, import notes you’ve exported as PDF or Markdown.', accept: '', color: '#f5c400' },
   { id: 'samsung', name: 'Samsung Notes', how: 'Import .sdocx files, or notes saved from Samsung Notes as Word, PDF or text files (Share → Save as file).', accept: '.sdocx,.docx,.pdf,.txt,.zip', color: '#f25c4c' },
@@ -643,9 +647,13 @@ function ImportPage() {
             disabled={Boolean(busy) || (im.id === 'apple' && desktop?.platform !== 'darwin' && false)}
             onClick={() => (im.id === 'apple' && desktop?.platform === 'darwin' ? void run(importAppleNotes) : pick(im.accept || '*/*'))}
           >
-            <span className="import-badge" style={{ background: im.color }}>
-              {im.name[0]}
-            </span>
+            {importIcon(im.id) ? (
+              <img className="import-icon" src={importIcon(im.id)} alt="" draggable={false} />
+            ) : (
+              <span className="import-badge" style={{ background: im.color }}>
+                <FileText size={18} />
+              </span>
+            )}
             <span className="import-text">
               <span className="import-name">{im.name}</span>
               <span className="import-how">{im.how}</span>
@@ -811,7 +819,7 @@ function AboutPage() {
           </ul>
         </Group>
       ))}
-      <div className="set-footer">Inspired by Apple Notes. Not affiliated with Apple. Fonts: Inter, Lora, Merriweather, Playfair Display, Nunito, JetBrains Mono and Caveat (SIL Open Font License).</div>
+      <div className="set-footer">Inspired by Apple Notes. Not affiliated with Apple or the makers of the other apps it imports from; their names and icons belong to them. Fonts: Inter, Lora, Merriweather, Playfair Display, Nunito, JetBrains Mono and Caveat (SIL Open Font License).</div>
     </>
   )
 }
