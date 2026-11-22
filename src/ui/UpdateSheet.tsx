@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { marked } from 'marked'
+import { isAndroid } from '../lib/storage'
 import { useUi } from '../lib/ui'
 import { downloadUpdate, installUpdate, useUpdate } from '../lib/updater'
 
@@ -83,7 +84,7 @@ export function UpdateSheet() {
                 <span>Downloading… {Math.round((u.progress ?? 0) * 100)}%</span>
               </>
             ) : u.state === 'ready' ? (
-              'Restart to Update'
+              isAndroid ? 'Install' : 'Restart to Update'
             ) : u.state === 'installing' ? (
               'Installing…'
             ) : u.inApp ? (

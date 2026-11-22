@@ -15,7 +15,7 @@ import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
 import { applyShortcuts } from './lib/shortcuts'
 import { startWindowSync } from './lib/windows'
-import { startUpdater } from './lib/updater'
+import { checkForUpdates, startUpdater, useUpdate } from './lib/updater'
 import { AttachmentsBrowser } from './ui/AttachmentsBrowser'
 import { runCommand } from './ui/commands'
 import { Gallery } from './ui/NoteList'
@@ -23,7 +23,7 @@ import { OverlayHost, ToastHost } from './ui/overlays'
 import { SettingsWindow } from './ui/Settings'
 import { Sidebar } from './ui/Sidebar'
 import { Toolbar } from './ui/Toolbar'
-import { UpdateSheet } from './ui/UpdateSheet'
+import { UpdateSheet, useUpdateSheet } from './ui/UpdateSheet'
 
 // Notes' window: folders on the left, the note list in the middle, the open note on the right
 // (or the gallery of notes, or the attachments browser), with the toolbar along the top.
@@ -73,7 +73,7 @@ function browserShortcut(e: KeyboardEvent): string | null {
 }
 
 // For the screenshot hook and debugging: the stores and commands.
-;(window as unknown as { __notes: unknown }).__notes = { store: useStore, ui: useUi, run: runCommand, editor: useEditorRef, importFiles, applyImport, lock, exporter }
+;(window as unknown as { __notes: unknown }).__notes = { store: useStore, ui: useUi, run: runCommand, editor: useEditorRef, importFiles, applyImport, lock, exporter, updater: { check: checkForUpdates, state: useUpdate } }
 
 export default function App() {
   const loaded = useStore((s) => s.loaded)
@@ -129,6 +129,7 @@ export default function App() {
       ? CapApp.addListener('backButton', () => {
           const ui = useUi.getState()
           if (document.querySelector('.menu, .dialog')) dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+          else if (useUpdateSheet.getState().open) useUpdateSheet.setState({ open: false })
           else if (ui.settings) useUi.setState({ settings: null })
           else if (ui.findOpen) useUi.setState({ findOpen: false })
           else if (ui.phoneNote) backToList()

@@ -62,9 +62,13 @@ features and build commands.
   in IndexedDB. Phones (≤700px, src/lib/phone.ts) show one screen at a time: the sidebar, then the
   note (`ui.phoneNote`, back button / `backToList`); tablets keep the desktop layout. Native bits:
   NotesNativePlugin.java (window colour + bar icons behind the status/navigation bars, src/lib/android.ts).
-  Icons from assets/src/icon.svg by `npm run icons` (adaptive icon too). Not done yet on Android:
-  Google sign-in (needs an Android OAuth client + SHA-1), the APK updater sheet (port the user's standard
-  one from ~/streamhub/mobile/src/ui/UpdateSheet.tsx), Generate title beyond basic. Screenshots: a debug APK lets Chrome DevTools in
+  Icons from assets/src/icon.svg by `npm run icons` (adaptive icon too). Google sign-in: Google's
+  Android authorization API (`googleAuthorize`, play-services-auth) gives drive.appdata access
+  tokens; it needs Android OAuth clients (package app.notes.android + the release and debug key
+  SHA-1s) in the Cloud project, no secret. Updater: src/lib/updater.ts checks GitHub for
+  `Notes-<v>.apk`, `downloadUpdate`/`installUpdate` in the plugin (SHA-256 checked, FileProvider,
+  "Install unknown apps" the first time); same sheet as the desktop. Debug builds allow cleartext
+  (app/src/debug) for testing it against a local server. Not done yet: Generate title beyond basic. Screenshots: a debug APK lets Chrome DevTools in
   (`adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>`), then `window.__notes`.
 - README screenshots live in docs/screenshots (desktop from the NOTES_SHOTS hook with
   `--force-device-scale-factor=2`; Android from `adb exec-out screencap`), made from sample notes,

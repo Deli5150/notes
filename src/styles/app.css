@@ -2670,3 +2670,14 @@ body.is-float-window {
 .is-phone .toolbar .crumb {
   display: none;
 }
+
+/* The update sheet on a phone: a card along the bottom, 8px from the edges. */
+.is-phone .update-sheet {
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + var(--safe-bottom));
+  width: auto;
+  border-radius: 38px;
+  padding: 10px 22px 20px;
+  background: var(--bg);
+}

@@ -518,7 +518,7 @@ function SyncPage() {
         <Cloud size={34} strokeWidth={1.4} />
         <div>
           <div className="set-hero-title">Sync with Google</div>
-          <div className="set-sub">Your notes, folders, pictures and settings are kept in a private folder in your Google Drive that only Notes can see. Sign in on each computer (and soon your Android phone) to have them everywhere.</div>
+          <div className="set-sub">Your notes, folders, pictures and settings are kept in a private folder in your Google Drive that only Notes can see. Sign in on each computer and your Android phone to have them everywhere.</div>
         </div>
       </div>
       <Group>
@@ -541,7 +541,7 @@ function SyncPage() {
             </Row>
           </>
         ) : (
-          <Row label="Sync is off" sub={available ? 'Sign in with your Google account to start.' : isAndroid ? 'Signing in to Google on Android is coming in a later version.' : 'This copy of Notes wasn’t built with a Google client, so it can’t sign in.'}>
+          <Row label="Sync is off" sub={available ? 'Sign in with your Google account to start.' : 'This copy of Notes wasn’t built with a Google client, so it can’t sign in.'}>
             <button
               className="btn btn-primary"
               disabled={!available || working}

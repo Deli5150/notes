@@ -9,6 +9,7 @@ import { sameSource, useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, QUICK_NOTES, type Folder, type SortBy } from '../lib/types'
 import { newFolder, newNote, newSmartFolder } from './actions'
 import { withKeys } from '../lib/shortcuts'
+import { isAndroid } from '../lib/storage'
 import { editFolderLook, FolderGlyph } from './FolderIcon'
 import { listSortMenu, NoteList, useListSections } from './NoteList'
 import { confirm, menuUnder, showMenu, toast, type MenuItem } from './overlays'
@@ -371,7 +372,7 @@ export function Sidebar({ width, onSettings, onFeedback }: { width: number; onSe
       <div className="sidebar-bottom">
         <button className={`sync-pill${sync.error ? ' is-error' : ''}`} onClick={() => useUi.setState({ settings: 'sync' })} title={sync.error ?? (sync.enabled ? 'Synced with Google' : 'Sync is off')}>
           {sync.enabled ? <Cloud size={13} /> : <CloudOff size={13} />}
-          {sync.error ? 'Sync problem' : sync.enabled ? (busy ? 'Syncing…' : 'Synced') : 'This computer'}
+          {sync.error ? 'Sync problem' : sync.enabled ? (busy ? 'Syncing…' : 'Synced') : isAndroid ? 'This phone' : 'This computer'}
         </button>
         <span className="tb-flex" />
         <button className={`tb-btn${trashOn ? ' is-on' : ''}`} title={trash ? `Recently Deleted (${trash})` : 'Recently Deleted'} onClick={() => useUi.getState().select(trashOn ? { kind: 'all' } : { kind: 'trash' })}>
