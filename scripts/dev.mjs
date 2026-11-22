@@ -1,0 +1,32 @@
+// `npm run dev`: the Vite dev server (live reload) and the desktop app pointed at it, with its
+// data in .dev-data/ (not your real notes). Quitting the app stops the server.
+import { spawn } from 'node:child_process'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+const url = 'http://localhost:5183'
+
+const dotenv = Object.fromEntries(
+  (fs.existsSync(path.join(root, '.env')) ? fs.readFileSync(path.join(root, '.env'), 'utf8') : '')
+    .split('\n')
+    .map((l) => /^([A-Z0-9_]+)=(.*)$/.exec(l.trim()))
+    .filter(Boolean)
+    .map((m) => [m[1], m[2]])
+)
+
+const server = spawn('npx', ['vite'], { cwd: root, stdio: ['ignore', 'inherit', 'inherit'] })
+for (let i = 0; i < 120; i++) {
+  try {
+    if ((await fetch(url)).ok) break
+  } catch {}
+  await new Promise((r) => setTimeout(r, 500))
+}
+const electron = path.join(root, 'desktop/node_modules/.bin/electron')
+const app = spawn(electron, ['.', `--user-data-dir=${path.join(root, '.dev-data')}`], { cwd: path.join(root, 'desktop'), stdio: 'inherit', env: { ...process.env, ...dotenv, NOTES_DEV_URL: url } })
+app.on('exit', () => {
+  server.kill()
+  process.exit(0)
+})
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => (server.kill(), app.kill()))

@@ -1,0 +1,15 @@
+node_modules/
+/dist/
+desktop/web/
+desktop/google.json
+desktop/node_modules/
+desktop/build/icon.iconset/
+.env
+.env.local
+credentials/
+*.keystore
+*.apk
+*.ipa
+.DS_Store
+.dev-data/
+/android/
