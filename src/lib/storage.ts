@@ -48,6 +48,7 @@ export interface DesktopBridge {
     pinned(): Promise<boolean>
     openInNotes(id: string): void
     onShown(cb: () => void): () => void
+    onHidden(cb: () => void): () => void
   }
   windows: {
     send(patch: import('./windows').Patch): void

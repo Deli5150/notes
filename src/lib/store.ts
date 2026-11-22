@@ -13,7 +13,8 @@ interface Store extends AppData {
   loaded: boolean
   /** Sync with Google's bookkeeping for this device (saved with the data, never exported). */
   sync: SyncMeta
-  hydrate(): Promise<void>
+  /** dropBlank: empty notes left from before are deleted (the main window; not the floating note). */
+  hydrate(opts?: { dropBlank?: boolean }): Promise<void>
   createNote(folderId: string, html?: string, extra?: Partial<Note>): Note
   setContent(id: string, html: string): void
   setName(id: string, name: string): void
@@ -84,7 +85,7 @@ export const useStore = create<Store>((set, get) => ({
   loaded: false,
   sync: emptyMeta(),
 
-  async hydrate() {
+  async hydrate(opts) {
     try {
       const json = await loadData()
       if (json) {
@@ -102,6 +103,11 @@ export const useStore = create<Store>((set, get) => ({
       console.warn('Notes: could not read saved data', e)
     }
     set({ loaded: true })
+    // After loading, so Sync hears they're gone too.
+    if (opts?.dropBlank) {
+      const blank = get().notes.filter(isBlankNote).map((n) => n.id)
+      if (blank.length) get().purgeNotes(blank)
+    }
   },
 
   createNote(folderId, html = '', extra = {}) {
@@ -274,6 +280,14 @@ useStore.subscribe((state, prev) => {
 if (typeof window !== 'undefined') window.addEventListener('beforeunload', () => void flushSave())
 
 export const exportData = (): AppData => dataOf(useStore.getState())
+
+/** Nothing written in it: no title, no text, no attachments (and not locked). */
+export const isBlankNote = (n: Note | undefined): boolean => Boolean(n && !n.locked && !n.name?.trim() && !n.text.trim() && !n.attachments.length)
+
+/** Deletes a note for good if it was left empty, so empty notes never pile up. */
+export function dropIfBlank(id: string | null | undefined): void {
+  if (id && isBlankNote(noteById(id))) useStore.getState().purgeNotes([id])
+}
 
 export const noteById = (id: string | null | undefined): Note | undefined => (id ? useStore.getState().notes.find((n) => n.id === id) : undefined)
 

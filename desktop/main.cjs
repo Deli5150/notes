@@ -224,6 +224,7 @@ function showFloat() {
 function hideFloat() {
   if (!floatWin || floatWin.isDestroyed() || !floatWin.isVisible()) return
   floatWin.hide()
+  floatWin.webContents.send('float:hidden')
   // Back to the app that was in front, as Raycast does.
   if (isMac && floatFromOtherApp) app.hide()
 }

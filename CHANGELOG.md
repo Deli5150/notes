@@ -12,6 +12,7 @@ The first release of Notes, for Mac and Windows.
 - Collapsible sections, Lines & Grids, links between notes (type >>), find & replace
 - Locked notes with one password, and Touch ID on Macs
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
+- A note closed or left with nothing in it is deleted, so there are never empty notes
 - Floating Quick Note: a small note above every app, shown and hidden with ⌃⌘N (Ctrl+Alt+N on Windows)
 - Every keyboard shortcut can be changed in Settings → Shortcuts (Ctrl instead of ⌘ on Windows)
 - ⌘W (Ctrl+W) closes the open note, then the window (⇧⌘W closes the window)

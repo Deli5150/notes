@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { NotePane, useEditorRef } from '../editor/Editor'
 import { withKeys } from '../lib/shortcuts'
 import { desktop } from '../lib/storage'
-import { useStore } from '../lib/store'
+import { dropIfBlank, isBlankNote, useStore } from '../lib/store'
 import { applyTheme } from '../lib/themes'
 import { QUICK_NOTES, type Note } from '../lib/types'
 import { useUi } from '../lib/ui'
@@ -29,11 +29,9 @@ const remember = (id: string) => {
   } catch {}
 }
 
-const isBlank = (n: Note | undefined) => Boolean(n && !n.name?.trim() && !n.text.trim() && !n.attachments.length)
-
 /** The open floating note, or a new one if it's gone. */
 function newFloatingNote(current?: Note): string {
-  if (isBlank(current)) return current!.id
+  if (isBlankNote(current)) return current!.id
   return useStore.getState().createNote(QUICK_NOTES, '').id
 }
 
@@ -45,6 +43,8 @@ export function FloatingNote() {
   const list = useMemo(() => [...quick].sort((a, b) => b.createdAt - a.createdAt), [quick])
   const [id, setId] = useState<string | null>(null)
   const [pinned, setPinned] = useState(true)
+  // Hidden, a Quick Note left empty is deleted, and a new one waits until it's shown again.
+  const [shown, setShown] = useState(true)
 
   useEffect(() => {
     void useStore.getState().hydrate()
@@ -60,10 +60,10 @@ export function FloatingNote() {
   const note = list.find((n) => n.id === id)
   // Open the last one used, else the newest, else a new one.
   useEffect(() => {
-    if (!loaded || note) return
+    if (!loaded || note || !shown) return
     const last = remembered()
     setId(list.find((n) => n.id === last)?.id ?? list[0]?.id ?? newFloatingNote())
-  }, [loaded, note, list])
+  }, [loaded, note, list, shown])
 
   useEffect(() => {
     if (!id) return
@@ -74,7 +74,9 @@ export function FloatingNote() {
   const go = (step: number) => {
     const i = list.findIndex((n) => n.id === id)
     const next = list[i + step]
-    if (next) setId(next.id)
+    if (!next) return
+    dropIfBlank(id)
+    setId(next.id)
   }
   const add = () => setId(newFloatingNote(note))
   const remove = () => {
@@ -96,13 +98,22 @@ export function FloatingNote() {
       if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('.menu, .dialog, .findbar')) desktop?.float.hide()
     }
     addEventListener('keydown', onKey)
+    const offHidden = desktop?.float.onHidden(() => {
+      setShown(false)
+      if (isBlankNote(note)) {
+        dropIfBlank(note!.id)
+        setId(null)
+      }
+    })
     const offShown = desktop?.float.onShown(() => {
+      setShown(true)
       const ed = useEditorRef.getState().editor
       if (ed && !ed.isDestroyed && !(document.activeElement instanceof HTMLTextAreaElement)) ed.commands.focus('end')
     })
     return () => {
       off?.()
       offShown?.()
+      offHidden?.()
       removeEventListener('keydown', onKey)
     }
   })
@@ -123,7 +134,7 @@ export function FloatingNote() {
         <button className="tb-btn is-small" title={withKeys('New Quick Note', 'new-note')} onClick={add}>
           <Plus size={15} />
         </button>
-        <button className="tb-btn is-small" title="Move to Recently Deleted" disabled={!note || isBlank(note)} onClick={remove}>
+        <button className="tb-btn is-small" title="Move to Recently Deleted" disabled={!note || isBlankNote(note)} onClick={remove}>
           <Trash2 size={14} />
         </button>
         <button className="tb-btn is-small" title="Open in Notes" disabled={!note} onClick={() => note && desktop?.float.openInNotes(note.id)}>

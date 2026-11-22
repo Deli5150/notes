@@ -26,6 +26,11 @@ contextBridge.exposeInMainWorld('notesApp', {
     pin: (on) => ipcRenderer.send('float:pin', on),
     pinned: () => ipcRenderer.invoke('float:pinned'),
     openInNotes: (id) => ipcRenderer.send('float:open-in-notes', id),
+    onHidden: (cb) => {
+      const listener = () => cb()
+      ipcRenderer.on('float:hidden', listener)
+      return () => ipcRenderer.off('float:hidden', listener)
+    },
     onShown: (cb) => {
       const listener = () => cb()
       ipcRenderer.on('float:shown', listener)

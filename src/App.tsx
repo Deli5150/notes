@@ -4,7 +4,7 @@ import { NotePane, useEditorRef } from './editor/Editor'
 import { applyImport, importFiles } from './import'
 import * as exporter from './lib/export'
 import * as lock from './lib/lock'
-import { flushSave, useStore } from './lib/store'
+import { dropIfBlank, flushSave, useStore } from './lib/store'
 import { desktop, isMac } from './lib/storage'
 import { startSync, syncNow } from './lib/syncRunner'
 import { applyTheme } from './lib/themes'
@@ -85,7 +85,7 @@ export default function App() {
   const [, setDarkTick] = useState(0)
 
   useEffect(() => {
-    void useStore.getState().hydrate()
+    void useStore.getState().hydrate({ dropBlank: true })
     startUpdater()
   }, [])
 
@@ -114,6 +114,18 @@ export default function App() {
     desktop?.setSpellcheck(s.spellcheck)
     void applyShortcuts()
     startWindowSync()
+    // Empty notes don't stay (hydrate drops any from before): each one goes as it's closed or left. Not the
+    // one the floating note has open (it does its own).
+    const floating = () => {
+      try {
+        return localStorage.getItem('notes.floating-note')
+      } catch {
+        return null
+      }
+    }
+    const offLeave = useUi.subscribe((st, prev) => {
+      if (prev.noteId && st.noteId !== prev.noteId && prev.noteId !== floating()) dropIfBlank(prev.noteId)
+    })
     const offKeys = useStore.subscribe((st, prev) => st.settings.shortcuts !== prev.settings.shortcuts && void applyShortcuts())
     const off = desktop?.onMenu((cmd, arg) => runCommand(cmd, arg))
     const onCommand = (e: Event) => runCommand((e as CustomEvent<string>).detail)
@@ -134,6 +146,7 @@ export default function App() {
     return () => {
       off?.()
       offKeys()
+      offLeave()
       window.removeEventListener('notes:command', onCommand)
       removeEventListener('keydown', onKey)
       document.removeEventListener('visibilitychange', onVisible)
