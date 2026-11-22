@@ -2,6 +2,7 @@ import { ChevronLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NotePane, useEditorRef } from './editor/Editor'
 import { applyImport, importFiles } from './import'
+import * as exporter from './lib/export'
 import * as lock from './lib/lock'
 import { flushSave, useStore } from './lib/store'
 import { desktop, isMac } from './lib/storage'
@@ -65,7 +66,7 @@ function browserShortcut(e: KeyboardEvent): string | null {
 }
 
 // For the screenshot hook and debugging: the stores and commands.
-;(window as unknown as { __notes: unknown }).__notes = { store: useStore, ui: useUi, run: runCommand, editor: useEditorRef, importFiles, applyImport, lock }
+;(window as unknown as { __notes: unknown }).__notes = { store: useStore, ui: useUi, run: runCommand, editor: useEditorRef, importFiles, applyImport, lock, exporter }
 
 export default function App() {
   const loaded = useStore((s) => s.loaded)

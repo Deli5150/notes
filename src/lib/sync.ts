@@ -10,7 +10,7 @@ import type { AppData, Settings } from './types'
 export const SYNC_FILE = 'notes-sync.json'
 
 /** Settings that follow you between devices (the rest, like pane widths, are per device). */
-export const SYNCED_SETTINGS = ['theme', 'appearance', 'sortBy', 'sortDir', 'groupByDate', 'startWith', 'sortChecked', 'paper', 'mathResults', 'fontFamily', 'fontSize', 'lineHeight', 'tags', 'lock'] as const satisfies ReadonlyArray<keyof Settings>
+export const SYNCED_SETTINGS = ['theme', 'appearance', 'sortBy', 'sortDir', 'groupByDate', 'startWith', 'sortChecked', 'paper', 'mathResults', 'fontFamily', 'fontSize', 'lineHeight', 'tags', 'lock', 'lockHistory'] as const satisfies ReadonlyArray<keyof Settings>
 
 const COLLECTIONS = ['folders', 'notes'] as const
 type Collection = (typeof COLLECTIONS)[number]
