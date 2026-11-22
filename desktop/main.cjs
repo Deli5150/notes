@@ -108,6 +108,14 @@ function createWindow() {
     if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
   })
   win.webContents.on('context-menu', (_e, params) => contextMenu(params))
+  // ⌘T is a second New Note shortcut, as in Arc (a menu item has room for only one).
+  win.webContents.on('before-input-event', (e, input) => {
+    const mod = process.platform === 'darwin' ? input.meta : input.control
+    if (input.type === 'keyDown' && mod && !input.shift && !input.alt && input.key.toLowerCase() === 't') {
+      e.preventDefault()
+      win.webContents.send('menu', 'new-note')
+    }
+  })
   win.on('close', (e) => {
     // On a Mac, closing the window keeps Notes running (reopen it from the Dock), like Apple Notes.
     if (isMac && !app.isQuitting) {
@@ -296,7 +304,7 @@ function buildMenu() {
         { label: 'Sort By', submenu: [cmd('Date Edited', 'sort', undefined, 'edited'), cmd('Date Created', 'sort', undefined, 'created'), cmd('Title', 'sort', undefined, 'title')] },
         cmd('Group by Date', 'group'),
         { type: 'separator' },
-        cmd('Show/Hide Folders', 'sidebar', 'Alt+CmdOrCtrl+S'),
+        cmd('Toggle Sidebar', 'sidebar', 'CmdOrCtrl+S'),
         cmd('Attachments Browser', 'attachments', 'CmdOrCtrl+3'),
         { type: 'separator' },
         { role: 'resetZoom' },
@@ -611,7 +619,12 @@ async function screenshots(dir) {
         await wait(Number(text.slice(4)) || 1000)
         continue
       }
-      if (text.startsWith('!')) {
+      if (text.startsWith('key:')) {
+        // "key:meta+t": a key press, as if typed (goes through before-input-event).
+        const parts = text.slice(4).split('+')
+        const keyCode = parts.pop()
+        for (const type of ['keyDown', 'char', 'keyUp']) win.webContents.sendInputEvent({ type, keyCode, modifiers: parts })
+      } else if (text.startsWith('!')) {
         await win.webContents.executeJavaScript(text.slice(1).replace(/%2C/g, ',').replace(/%3A/g, ':').replace(/%26/g, '&')).catch((e) => console.log(`[step failed] ${e.message}`))
       } else if (text.startsWith('@')) {
         await win.webContents.executeJavaScript(`(() => { const el = [...document.querySelectorAll('[title=${JSON.stringify(text.slice(1))}],[aria-label=${JSON.stringify(text.slice(1))}]')].filter((e) => e.offsetParent).pop(); el && el.click(); return !!el })()`)

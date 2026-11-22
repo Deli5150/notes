@@ -54,7 +54,8 @@ function browserShortcut(e: KeyboardEvent): string | null {
   if (e.shiftKey && k === '9') return 'style:numbered'
   if (e.shiftKey && k === 'a') return 'attach'
   if (!e.shiftKey && !e.altKey) {
-    if (k === 'n') return 'new-note'
+    if (k === 'n' || k === 't') return 'new-note'
+    if (k === 's') return 'sidebar'
     if (k === ',') return 'settings'
     if (k === 'f') return 'find'
     if (k === 'k') return 'link'

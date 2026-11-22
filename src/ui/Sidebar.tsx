@@ -7,7 +7,7 @@ import { folderTree, useStore } from '../lib/store'
 import { useSyncState } from '../lib/syncRunner'
 import { sameSource, useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, QUICK_NOTES, type Folder, type SortBy } from '../lib/types'
-import { newFolder, newNote, newSmartFolder } from './actions'
+import { MOD, newFolder, newNote, newSmartFolder } from './actions'
 import { editFolderLook, FolderGlyph } from './FolderIcon'
 import { listSortMenu, NoteList, useListSections } from './NoteList'
 import { confirm, menuUnder, showMenu, toast, type MenuItem } from './overlays'
@@ -355,10 +355,10 @@ export function Sidebar({ width, onSettings, onFeedback }: { width: number; onSe
     <aside className="sidebar" style={{ width }}>
       <div className="sidebar-top">
         <span className="tb-flex" />
-        <button className="tb-btn" title="Hide Sidebar" onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
+        <button className="tb-btn" title={`Hide Sidebar (${MOD}S)`} onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
           <PanelLeftClose size={16} />
         </button>
-        <button className="tb-btn" title="New Note" onClick={() => newNote()}>
+        <button className="tb-btn" title={`New Note (${MOD}T)`} onClick={() => newNote()}>
           <SquarePen size={16} />
         </button>
       </div>

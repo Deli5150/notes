@@ -12,6 +12,7 @@ The first release of Notes, for Mac and Windows.
 - Collapsible sections, Lines & Grids, links between notes (type >>), find & replace
 - Locked notes with one password, and Touch ID on Macs
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
+- ⌘T (Ctrl+T) for a new note and ⌘S (Ctrl+S) to show or hide the sidebar, as in Arc
 - Sync with Google (your own Drive app folder); notes changed on two devices at once keep both versions
 - Import from Apple Notes (straight from the Notes app on a Mac), Samsung Notes, Notion, Evernote, Google Keep, Bear, Simplenote, Standard Notes, Obsidian/Markdown, Word, PDF, text and HTML
 - Export to PDF, Markdown, HTML and plain text; print; export everything as Markdown; full backups

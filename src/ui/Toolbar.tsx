@@ -86,7 +86,7 @@ export function Toolbar() {
     <div className="toolbar">
       {sidebarHidden && (
         <>
-          <button className="tb-btn" title="Show Sidebar" onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>
+          <button className="tb-btn" title={`Show Sidebar (${MOD}S)`} onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>
             <PanelLeft size={16} />
           </button>
           <button className="tb-btn" title={`New Note (${MOD}N)`} onClick={() => newNote()}>
