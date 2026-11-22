@@ -9,6 +9,7 @@ import { desktop, isMac } from './lib/storage'
 import { startSync, syncNow } from './lib/syncRunner'
 import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
+import { applyShortcuts } from './lib/shortcuts'
 import { startUpdater } from './lib/updater'
 import { AttachmentsBrowser } from './ui/AttachmentsBrowser'
 import { runCommand } from './ui/commands'
@@ -110,6 +111,8 @@ export default function App() {
     desktop?.updater.setAuto(s.checkUpdates)
     desktop?.setQuickNoteShortcut(s.quickNoteShortcut)
     desktop?.setSpellcheck(s.spellcheck)
+    void applyShortcuts()
+    const offKeys = useStore.subscribe((st, prev) => st.settings.shortcuts !== prev.settings.shortcuts && void applyShortcuts())
     const off = desktop?.onMenu((cmd, arg) => runCommand(cmd, arg))
     const onCommand = (e: Event) => runCommand((e as CustomEvent<string>).detail)
     window.addEventListener('notes:command', onCommand)
@@ -128,6 +131,7 @@ export default function App() {
     window.addEventListener('pagehide', onHide)
     return () => {
       off?.()
+      offKeys()
       window.removeEventListener('notes:command', onCommand)
       removeEventListener('keydown', onKey)
       document.removeEventListener('visibilitychange', onVisible)

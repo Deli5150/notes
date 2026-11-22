@@ -3,7 +3,7 @@ import { useEditorState } from '@tiptap/react'
 import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, IndentDecrease, IndentIncrease, Italic, RemoveFormatting, Strikethrough, Subscript, Superscript, Underline } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FONT_FAMILIES, HIGHLIGHTS, TEXT_COLORS } from '../editor/setup'
-import { MOD, SHIFT } from './actions'
+import { keysLabel, withKeys } from '../lib/shortcuts'
 
 // The "Aa" panel: Apple Notes' paragraph styles, then text styles, highlights, colours, fonts,
 // sizes, alignment and indentation.
@@ -13,22 +13,24 @@ type Style = { id: string; label: string; cls: string; active: (e: Editor) => bo
 const toBody = (e: Editor) => e.chain().focus().clearNodes().setParagraph().run()
 
 export const STYLES: Style[] = [
-  { id: 'title', label: 'Title', cls: 'fs-title', shortcut: `${SHIFT}${MOD}T`, active: (e) => e.isActive('heading', { level: 1 }), run: (e) => e.chain().focus().clearNodes().setHeading({ level: 1 }).run() },
-  { id: 'heading', label: 'Heading', cls: 'fs-heading', shortcut: `${SHIFT}${MOD}H`, active: (e) => e.isActive('heading', { level: 2 }), run: (e) => e.chain().focus().clearNodes().setHeading({ level: 2 }).run() },
-  { id: 'subheading', label: 'Subheading', cls: 'fs-subheading', shortcut: `${SHIFT}${MOD}J`, active: (e) => e.isActive('heading', { level: 3 }), run: (e) => e.chain().focus().clearNodes().setHeading({ level: 3 }).run() },
+  { id: 'title', label: 'Title', cls: 'fs-title', get shortcut() { return keysLabel('style:title') }, active: (e) => e.isActive('heading', { level: 1 }), run: (e) => e.chain().focus().clearNodes().setHeading({ level: 1 }).run() },
+  { id: 'heading', label: 'Heading', cls: 'fs-heading', get shortcut() { return keysLabel('style:heading') }, active: (e) => e.isActive('heading', { level: 2 }), run: (e) => e.chain().focus().clearNodes().setHeading({ level: 2 }).run() },
+  { id: 'subheading', label: 'Subheading', cls: 'fs-subheading', get shortcut() { return keysLabel('style:subheading') }, active: (e) => e.isActive('heading', { level: 3 }), run: (e) => e.chain().focus().clearNodes().setHeading({ level: 3 }).run() },
   {
     id: 'body',
     label: 'Body',
     cls: 'fs-body',
-    shortcut: `${SHIFT}${MOD}B`,
+    get shortcut() {
+      return keysLabel('style:body')
+    },
     active: (e) => e.isActive('paragraph') && !['bulletList', 'dashedList', 'orderedList', 'taskList', 'blockquote'].some((n) => e.isActive(n)),
     run: toBody
   },
-  { id: 'mono', label: 'Monostyled', cls: 'fs-mono', shortcut: `${SHIFT}${MOD}M`, active: (e) => e.isActive('codeBlock'), run: (e) => e.chain().focus().toggleCodeBlock().run() },
-  { id: 'bullet', label: '•  Bulleted List', cls: 'fs-body', shortcut: `${SHIFT}${MOD}7`, active: (e) => e.isActive('bulletList'), run: (e) => e.chain().focus().toggleBulletList().run() },
-  { id: 'dashed', label: '–  Dashed List', cls: 'fs-body', shortcut: `${SHIFT}${MOD}8`, active: (e) => e.isActive('dashedList'), run: (e) => e.chain().focus().toggleDashedList().run() },
-  { id: 'numbered', label: '1.  Numbered List', cls: 'fs-body', shortcut: `${SHIFT}${MOD}9`, active: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
-  { id: 'quote', label: '|  Block Quote', cls: 'fs-body', shortcut: `${MOD}'`, active: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() }
+  { id: 'mono', label: 'Monostyled', cls: 'fs-mono', get shortcut() { return keysLabel('style:mono') }, active: (e) => e.isActive('codeBlock'), run: (e) => e.chain().focus().toggleCodeBlock().run() },
+  { id: 'bullet', label: '•  Bulleted List', cls: 'fs-body', get shortcut() { return keysLabel('style:bullet') }, active: (e) => e.isActive('bulletList'), run: (e) => e.chain().focus().toggleBulletList().run() },
+  { id: 'dashed', label: '–  Dashed List', cls: 'fs-body', get shortcut() { return keysLabel('style:dashed') }, active: (e) => e.isActive('dashedList'), run: (e) => e.chain().focus().toggleDashedList().run() },
+  { id: 'numbered', label: '1.  Numbered List', cls: 'fs-body', get shortcut() { return keysLabel('style:numbered') }, active: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
+  { id: 'quote', label: '|  Block Quote', cls: 'fs-body', get shortcut() { return keysLabel('style:quote') }, active: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() }
 ]
 
 const SIZES = [10, 12, 13, 14, 15, 16, 18, 20, 24, 28, 32, 40, 48]
@@ -97,16 +99,16 @@ export function FormatPanel({ editor, anchor, onClose }: { editor: Editor; ancho
         ))}
       </div>
       <div className="format-row">
-        <button className={`seg${st.bold ? ' is-on' : ''}`} title={`Bold (${MOD}B)`} onClick={() => chain().toggleBold().run()}>
+        <button className={`seg${st.bold ? ' is-on' : ''}`} title={withKeys('Bold', 'bold')} onClick={() => chain().toggleBold().run()}>
           <Bold size={16} strokeWidth={2.6} />
         </button>
-        <button className={`seg${st.italic ? ' is-on' : ''}`} title={`Italic (${MOD}I)`} onClick={() => chain().toggleItalic().run()}>
+        <button className={`seg${st.italic ? ' is-on' : ''}`} title={withKeys('Italic', 'italic')} onClick={() => chain().toggleItalic().run()}>
           <Italic size={16} />
         </button>
-        <button className={`seg${st.underline ? ' is-on' : ''}`} title={`Underline (${MOD}U)`} onClick={() => chain().toggleUnderline().run()}>
+        <button className={`seg${st.underline ? ' is-on' : ''}`} title={withKeys('Underline', 'underline')} onClick={() => chain().toggleUnderline().run()}>
           <Underline size={16} />
         </button>
-        <button className={`seg${st.strike ? ' is-on' : ''}`} title={`Strikethrough (${SHIFT}${MOD}X)`} onClick={() => chain().toggleStrike().run()}>
+        <button className={`seg${st.strike ? ' is-on' : ''}`} title={withKeys('Strikethrough', 'strike')} onClick={() => chain().toggleStrike().run()}>
           <Strikethrough size={16} />
         </button>
         <button className={`seg${st.sup ? ' is-on' : ''}`} title="Superscript" onClick={() => chain().toggleSuperscript().run()}>
@@ -189,10 +191,10 @@ export function FormatPanel({ editor, anchor, onClose }: { editor: Editor; ancho
             <Icon size={16} />
           </button>
         ))}
-        <button className="seg" title={`Decrease indent (${MOD}[)`} onClick={() => chain().outdent().run()}>
+        <button className="seg" title={withKeys('Decrease indent', 'outdent')} onClick={() => chain().outdent().run()}>
           <IndentDecrease size={16} />
         </button>
-        <button className="seg" title={`Increase indent (${MOD}])`} onClick={() => chain().indent().run()}>
+        <button className="seg" title={withKeys('Increase indent', 'indent')} onClick={() => chain().indent().run()}>
           <IndentIncrease size={16} />
         </button>
         <button className="seg" title="Clear formatting" onClick={() => chain().unsetAllMarks().run()}>

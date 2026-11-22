@@ -1,4 +1,4 @@
-import type { Editor, Extensions } from '@tiptap/core'
+import { Extension, type Editor, type Extensions } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import Subscript from '@tiptap/extension-subscript'
@@ -36,6 +36,17 @@ const NoteHighlight = Highlight.extend({
   }
 }).configure({ multicolor: true })
 
+/** In the desktop app the menu's shortcuts (which can be changed) do the formatting, so the editor's
+ *  own keys for the same things are switched off: a shortcut moved elsewhere stops working here. */
+const MENU_KEYS = Extension.create({
+  name: 'menuKeys',
+  priority: 10000,
+  addKeyboardShortcuts() {
+    const keys = ['Mod-b', 'Mod-i', 'Mod-u', 'Mod-e', 'Mod-k', 'Mod-.', 'Mod-,', 'Mod-]', 'Mod-[', 'Mod-Shift-s', 'Mod-Shift-x', 'Mod-Shift-b', 'Mod-Shift-e', 'Mod-Shift-h', 'Mod-Shift-j', 'Mod-Shift-l', 'Mod-Shift-m', 'Mod-Shift-r', 'Mod-Shift-t', 'Mod-Shift-u', 'Mod-Shift-7', 'Mod-Shift-8', 'Mod-Shift-9', 'Mod-Alt-c', ...[0, 1, 2, 3, 4, 5, 6].map((n) => `Mod-Alt-${n}`)]
+    return Object.fromEntries(keys.map((k) => [k, () => true]))
+  }
+})
+
 export function noteExtensions(): Extensions {
   const settings = () => useStore.getState().settings
   return [
@@ -69,6 +80,7 @@ export function noteExtensions(): Extensions {
     Tags.configure({ enabled: () => settings().tags }),
     MathNotes.configure({ mode: () => settings().mathResults }),
     Find,
+    ...(desktop ? [MENU_KEYS] : []),
     Attachment
   ]
 }

@@ -7,6 +7,7 @@ import { copyNote, exportNote, printNote, type ExportFormat } from '../lib/expor
 import { hasPassword, isUnlocked, lockNote, lockNow, removeLock, setPassword, unlock, unlockWithTouchId } from '../lib/lock'
 import { notesFor, sortNotes } from '../lib/query'
 import { desktop, isMac } from '../lib/storage'
+import { keysLabel } from '../lib/shortcuts'
 import { noteById, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, QUICK_NOTES, type Folder, type Note, type Paper } from '../lib/types'
@@ -201,7 +202,7 @@ export function shareMenu(note = selectedNotes()[0]): MenuItem[] {
           .then(() => toast('Copied'))
           .catch(() => toast('Couldn’t copy'))
     },
-    { label: 'Print…', icon: <Printer size={14} />, shortcut: `${MOD}P`, disabled: off, onClick: () => void print() }
+    { label: 'Print…', icon: <Printer size={14} />, shortcut: keysLabel('print'), disabled: off, onClick: () => void print() }
   ]
 }
 
@@ -221,7 +222,7 @@ export function noteMenu(notes = selectedNotes()): MenuItem[] {
     ...(one ? [{ label: one.locked ? 'Remove Lock' : 'Lock Note', icon: one.locked ? <LockOpen size={14} /> : <Lock size={14} />, onClick: () => void toggleLock(one) }] : []),
     { separator: true },
     { label: 'Move to', icon: <FolderInput size={14} />, submenu: moveMenu(notes) },
-    ...(one ? [{ label: 'Duplicate', icon: <Copy size={14} />, shortcut: `${MOD}D`, onClick: () => duplicate(one) }] : []),
+    ...(one ? [{ label: 'Duplicate', icon: <Copy size={14} />, shortcut: keysLabel('duplicate'), onClick: () => duplicate(one) }] : []),
     ...(one ? [{ label: 'Share', submenu: shareMenu(one) }] : []),
     { separator: true },
     { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onClick: () => void deleteNotes(notes) }
@@ -292,14 +293,14 @@ export async function addLink(): Promise<void> {
 export function attachMenu(): MenuItem[] {
   return [
     { label: 'Photo or Video…', onClick: () => void attachFiles('image/*,video/*') },
-    { label: 'Attach File…', shortcut: `${SHIFT}${MOD}A`, onClick: () => void attachFiles() },
+    { label: 'Attach File…', shortcut: keysLabel('attach'), onClick: () => void attachFiles() },
     { separator: true },
     { label: 'Scan Documents', onClick: () => void addFromCamera('scan') },
     { label: 'Take Photo', onClick: () => void addFromCamera('photo') },
     { label: 'Add Sketch', onClick: () => void addSketch() },
     { label: 'Record Audio', onClick: () => void addRecording() },
     { separator: true },
-    { label: 'Add Link…', shortcut: `${MOD}K`, onClick: () => void addLink() }
+    { label: 'Add Link…', shortcut: keysLabel('link'), onClick: () => void addLink() }
   ]
 }
 

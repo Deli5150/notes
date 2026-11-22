@@ -43,6 +43,12 @@ export interface DesktopBridge {
   closeWindow(): void
   setChrome(colors: { bg: string; fg: string; dark: boolean; translucent: boolean }): void
   setQuickNoteShortcut(on: boolean): void
+  shortcuts: {
+    set(overrides: Record<string, string>): Promise<import('./shortcuts').Shortcut[]>
+    /** While on, keys pressed go to onCaptured instead of running anything. */
+    capture(on: boolean): void
+    onCaptured(cb: (keys: string) => void): () => void
+  }
   setSpellcheck(on: boolean): void
   onMenu(cb: (command: string, arg?: string) => void): () => void
   touchId: {

@@ -26,6 +26,7 @@ import {
   toggleChecklist,
   toggleLock
 } from './actions'
+import { withKeys } from '../lib/shortcuts'
 import { FormatPanel } from './FormatPanel'
 import { menuUnder, type MenuItem } from './overlays'
 
@@ -86,7 +87,7 @@ export function Toolbar() {
     <div className={`toolbar${note ? '' : ' is-empty'}`}>
       {sidebarHidden && (
         <>
-          <button className="tb-btn" title={`Show Sidebar (${MOD}S)`} onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>
+          <button className="tb-btn" title={withKeys('Show Sidebar', 'sidebar')} onClick={() => useStore.getState().setSettings({ sidebarHidden: false })}>
             <PanelLeft size={16} />
           </button>
           <button className="tb-btn" title={`New Note (${MOD}N)`} onClick={() => newNote()}>

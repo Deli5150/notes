@@ -2359,3 +2359,41 @@ kbd {
   background: var(--select);
   color: var(--on-select);
 }
+
+/* Settings → Shortcuts */
+.shortcuts-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.shortcuts-bar .field {
+  flex: 1;
+}
+
+.keys-btn {
+  min-width: 92px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: var(--field);
+  box-shadow: inset 0 0 0 1px var(--sep);
+  font: 500 12px var(--ui-font);
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.keys-btn:hover {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.keys-btn.is-none {
+  color: var(--faint);
+  letter-spacing: 0;
+}
+
+.keys-btn.is-on {
+  color: var(--accent);
+  letter-spacing: 0;
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}

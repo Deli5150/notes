@@ -4,7 +4,7 @@ import type { Source } from './query'
 // What's selected and open on screen (not saved with your notes).
 
 export type Pane = 'sidebar' | 'list' | 'editor'
-export type SettingsPage = 'general' | 'appearance' | 'editor' | 'sync' | 'import' | 'export' | 'lock' | 'updates' | 'feedback' | 'about'
+export type SettingsPage = 'general' | 'appearance' | 'editor' | 'sync' | 'import' | 'export' | 'lock' | 'shortcuts' | 'updates' | 'feedback' | 'about'
 
 interface UiState {
   source: Source

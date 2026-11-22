@@ -23,6 +23,15 @@ contextBridge.exposeInMainWorld('notesApp', {
   openExternal: (url) => ipcRenderer.send('open-external', url),
   setChrome: (c) => ipcRenderer.send('chrome', c),
   setQuickNoteShortcut: (on) => ipcRenderer.send('quick-note-shortcut', on),
+  shortcuts: {
+    set: (overrides) => ipcRenderer.invoke('shortcuts:set', overrides),
+    capture: (on) => ipcRenderer.send('shortcuts:capture', on),
+    onCaptured: (cb) => {
+      const listener = (_e, keys) => cb(keys)
+      ipcRenderer.on('shortcut:captured', listener)
+      return () => ipcRenderer.off('shortcut:captured', listener)
+    }
+  },
   setSpellcheck: (on) => ipcRenderer.send('spellcheck', on),
   onMenu: (cb) => {
     const listener = (_e, command, arg) => cb(command, arg)

@@ -108,14 +108,7 @@ function createWindow() {
     if (/^(https?|mailto):/.test(url)) void shell.openExternal(url)
   })
   win.webContents.on('context-menu', (_e, params) => contextMenu(params))
-  // ⌘T is a second New Note shortcut, as in Arc (a menu item has room for only one).
-  win.webContents.on('before-input-event', (e, input) => {
-    const mod = process.platform === 'darwin' ? input.meta : input.control
-    if (input.type === 'keyDown' && mod && !input.shift && !input.alt && input.key.toLowerCase() === 't') {
-      e.preventDefault()
-      win.webContents.send('menu', 'new-note')
-    }
-  })
+  win.webContents.on('before-input-event', onKey)
   win.on('close', (e) => {
     // On a Mac, closing the window keeps Notes running (reopen it from the Dock), like Apple Notes.
     if (isMac && !app.isQuitting) {
@@ -173,8 +166,95 @@ function contextMenu(params) {
   else if (items.length && params.selectionText) Menu.buildFromTemplate(items).popup({ window: win })
 }
 
+// ── Keyboard shortcuts ───────────────────────────────────────────────────────────────────────
+// Every menu command (and a few without a menu item) can get its own keys in Settings → Shortcuts.
+// The menu only shows them: onKey runs them before the page sees the keys, the same way on a Mac and
+// on Windows (where CmdOrCtrl is Ctrl). Keys are kept as canonical accelerators, e.g.
+// "CmdOrCtrl+Shift+N"; "" means none.
+
+const MODS = ['CmdOrCtrl', 'Ctrl', 'Alt', 'Shift', 'Super']
+
+function normalizeKeys(a) {
+  if (!a) return ''
+  const parts = a.split('+')
+  const key = parts.pop()
+  const m = new Set()
+  for (const p of parts) {
+    const t = p.toLowerCase()
+    if (t === 'cmdorctrl' || t === 'commandorcontrol') m.add('CmdOrCtrl')
+    else if (t === 'cmd' || t === 'command' || t === 'super' || t === 'meta') m.add(isMac ? 'CmdOrCtrl' : 'Super')
+    else if (t === 'ctrl' || t === 'control') m.add(isMac ? 'Ctrl' : 'CmdOrCtrl')
+    else if (t === 'alt' || t === 'option') m.add('Alt')
+    else if (t === 'shift') m.add('Shift')
+  }
+  const k = key === 'Plus' ? '=' : key.length === 1 ? key.toUpperCase() : key
+  return [...MODS.filter((x) => m.has(x)), k].join('+')
+}
+
+const CODE_KEYS = { Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backquote: '`', Space: 'Space', Tab: 'Tab', Enter: 'Enter', NumpadEnter: 'Enter', Backspace: 'Backspace', Delete: 'Delete', Escape: 'Escape', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown' }
+
+/** The keys pressed, as an accelerator (by key position, so it works with any keyboard layout). */
+function keysOfInput(input) {
+  const c = input.code ?? ''
+  const key = /^Key[A-Z]$/.test(c) ? c.slice(3) : /^Digit\d$/.test(c) ? c.slice(5) : /^F\d{1,2}$/.test(c) ? c : /^Numpad\d$/.test(c) ? `num${c.slice(6)}` : CODE_KEYS[c]
+  if (!key) return null
+  const m = new Set()
+  if (input.meta) m.add(isMac ? 'CmdOrCtrl' : 'Super')
+  if (input.control) m.add(isMac ? 'Ctrl' : 'CmdOrCtrl')
+  if (input.alt) m.add('Alt')
+  if (input.shift) m.add('Shift')
+  return [...MODS.filter((x) => m.has(x)), key].join('+')
+}
+
+let shortcutOverrides = {}
+/** What can have keys: { id, label, group, def, keys, run, global }. */
+let catalog = []
+let bindings = new Map()
+let capturing = false
+
+const keysFor = (id, def) => (Object.hasOwn(shortcutOverrides, id) ? normalizeKeys(shortcutOverrides[id]) : normalizeKeys(def))
+
+function onKey(e, input) {
+  if (input.type !== 'keyDown') return
+  const keys = keysOfInput(input)
+  if (!keys) return
+  if (capturing) {
+    // Settings → Shortcuts is waiting for new keys: they go to it, not to the menu or the note.
+    e.preventDefault()
+    if (!input.isAutoRepeat) win?.webContents.send('shortcut:captured', keys)
+    return
+  }
+  const run = bindings.get(keys)
+  if (run) {
+    e.preventDefault()
+    run()
+  }
+}
+
+let quickNoteOn = false
+let quickNoteKeys = ''
+function applyQuickNote() {
+  const entry = catalog.find((c) => c.id === 'global:quick-note')
+  const want = quickNoteOn && !capturing ? (entry?.keys ?? '') : ''
+  if (want === quickNoteKeys) return
+  if (quickNoteKeys) globalShortcut.unregister(quickNoteKeys)
+  quickNoteKeys = ''
+  if (want) {
+    try {
+      if (globalShortcut.register(want, () => send('new-quick-note'))) quickNoteKeys = want
+    } catch {}
+  }
+}
+
 function buildMenu() {
-  const cmd = (label, command, accelerator, arg) => ({ label, accelerator, click: () => send(command, arg) })
+  // A menu item with keys (`sc` is taken out before the menu is built).
+  const item = (label, id, def, run) => ({ label, sc: { id, def, run }, click: run })
+  const cmd = (label, command, accelerator, arg) => item(label, arg ? `${command}:${arg}` : command, accelerator, () => send(command, arg))
+  const focused = () => BrowserWindow.getFocusedWindow() ?? win
+  const zoom = (by) => {
+    const wc = focused()?.webContents
+    if (wc) wc.setZoomLevel(by === 0 ? 0 : wc.getZoomLevel() + by)
+  }
   const template = [
     ...(isMac
       ? [
@@ -220,7 +300,7 @@ function buildMenu() {
         cmd('Delete Note', 'delete'),
         { type: 'separator' },
         cmd('Close Note', 'close-note', 'CmdOrCtrl+W'),
-        { role: 'close', accelerator: 'Shift+CmdOrCtrl+W' },
+        item('Close Window', 'close-window', 'Shift+CmdOrCtrl+W', () => focused()?.close()),
         ...(isMac ? [] : [{ type: 'separator' }, cmd('Settings…', 'settings', 'Ctrl+,'), { role: 'quit' }])
       ]
     },
@@ -274,7 +354,7 @@ function buildMenu() {
             cmd('Strikethrough', 'strike', 'Shift+CmdOrCtrl+X'),
             cmd('Highlight', 'highlight', 'Shift+CmdOrCtrl+E'),
             { type: 'separator' },
-            cmd('Bigger', 'bigger', 'CmdOrCtrl+Plus'),
+            cmd('Bigger', 'bigger', 'CmdOrCtrl+='),
             cmd('Smaller', 'smaller', 'CmdOrCtrl+-')
           ]
         },
@@ -310,11 +390,11 @@ function buildMenu() {
         cmd('Toggle Sidebar', 'sidebar', 'CmdOrCtrl+S'),
         cmd('Attachments Browser', 'attachments', 'CmdOrCtrl+3'),
         { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
+        item('Actual Size', 'zoom-reset', 'CmdOrCtrl+0', () => zoom(0)),
+        item('Zoom In', 'zoom-in', 'Alt+CmdOrCtrl+=', () => zoom(0.5)),
+        item('Zoom Out', 'zoom-out', 'Alt+CmdOrCtrl+-', () => zoom(-0.5)),
         { type: 'separator' },
-        { role: 'togglefullscreen' },
+        item(isMac ? 'Enter Full Screen' : 'Full Screen', 'fullscreen', isMac ? 'Ctrl+CmdOrCtrl+F' : 'F11', () => focused()?.setFullScreen(!focused().isFullScreen())),
         ...(!app.isPackaged ? [{ role: 'toggleDevTools' }, { role: 'reload' }] : [])
       ]
     },
@@ -324,8 +404,46 @@ function buildMenu() {
       submenu: [cmd('Send Feedback…', 'feedback'), ...(!isMac ? [cmd('Check for Updates…', 'updates'), cmd('About Notes', 'about')] : []), { label: 'Notes on GitHub', click: () => shell.openExternal('https://github.com/Deli5150/notes') }]
     }
   ]
+  // Shortcuts without a menu item.
+  const extra = [
+    { id: 'new-note:tab', label: 'New Note (second shortcut)', group: 'File', def: 'CmdOrCtrl+T', run: () => send('new-note') },
+    { id: 'global:quick-note', label: 'New Quick Note from anywhere', group: 'Anywhere', def: 'Ctrl+Alt+N', global: true }
+  ]
+  catalog = []
+  bindings = new Map()
+  const add = (entry) => {
+    entry.keys = keysFor(entry.id, entry.def)
+    entry.def = normalizeKeys(entry.def)
+    catalog.push(entry)
+    if (entry.keys && !entry.global && !bindings.has(entry.keys)) bindings.set(entry.keys, entry.run)
+  }
+  const walk = (items, group) => {
+    for (const it of items) {
+      if (it.sc) {
+        add({ id: it.sc.id, label: it.label, group, def: it.sc.def, run: it.sc.run })
+        it.accelerator = keysFor(it.sc.id, it.sc.def) || undefined
+        // Shown in the menu; onKey runs it (on Windows the menu would otherwise take the keys first).
+        it.registerAccelerator = false
+        delete it.sc
+      }
+      if (Array.isArray(it.submenu)) walk(it.submenu, group)
+    }
+  }
+  for (const top of template) if (Array.isArray(top.submenu)) walk(top.submenu, top.label ?? (top.role === 'help' ? 'Help' : 'Notes'))
+  extra.forEach(add)
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+  applyQuickNote()
 }
+
+ipcMain.handle('shortcuts:set', (_e, overrides) => {
+  shortcutOverrides = overrides && typeof overrides === 'object' ? overrides : {}
+  buildMenu()
+  return catalog.map(({ id, label, group, def, keys, global }) => ({ id, label, group, def, keys, global: Boolean(global) }))
+})
+ipcMain.on('shortcuts:capture', (_e, on) => {
+  capturing = Boolean(on)
+  applyQuickNote()
+})
 
 // ── Data and attachments ─────────────────────────────────────────────────────────────────────
 
@@ -531,14 +649,9 @@ ipcMain.on('chrome', (_e, c) => {
   if (!c.translucent || !translucency) win.setBackgroundColor(c.bg)
 })
 
-let quickShortcut = false
 ipcMain.on('quick-note-shortcut', (_e, on) => {
-  const key = 'Control+Alt+N'
-  if (on && !quickShortcut) quickShortcut = globalShortcut.register(key, () => send('new-quick-note'))
-  if (!on && quickShortcut) {
-    globalShortcut.unregister(key)
-    quickShortcut = false
-  }
+  quickNoteOn = Boolean(on)
+  applyQuickNote()
 })
 
 ipcMain.on('spellcheck', (_e, on) => session.defaultSession.setSpellCheckerEnabled(Boolean(on)))

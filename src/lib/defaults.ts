@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: Settings = {
   checkUpdates: true,
   translucent: true,
   quickNoteShortcut: true,
+  shortcuts: {},
   spellcheck: true,
   touchId: false,
   sidebarWidth: 300,

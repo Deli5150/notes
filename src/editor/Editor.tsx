@@ -7,7 +7,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { create } from 'zustand'
 import { putDataUrl } from '../lib/attachments'
 import { lockedWithOldPassword, openLocked, openWithOldPassword, saveLocked, unlock, unlockWithTouchId, useLock } from '../lib/lock'
-import { desktop, isMac, openExternal } from '../lib/storage'
+import { desktop, openExternal } from '../lib/storage'
+import { useKeys } from '../lib/shortcuts'
 import { noteById, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, type Note } from '../lib/types'
@@ -480,6 +481,20 @@ function LockedNote({ note }: { note: Note }) {
 }
 
 /** The right-hand pane: the open note, a locked note's password screen, or nothing. */
+function EmptyPane() {
+  const tab = useKeys('new-note:tab')
+  const n = useKeys('new-note')
+  const keys = tab || n
+  return (
+    <div className="editor-pane is-empty">
+      <div className="empty-hint">
+        No note open
+        {keys && <span>{keys} for a new note</span>}
+      </div>
+    </div>
+  )
+}
+
 export function NotePane({ noteId }: { noteId: string | null }) {
   const note = useStore((s) => (noteId ? s.notes.find((n) => n.id === noteId) : undefined))
   const key = useLock((s) => s.key)
@@ -497,15 +512,7 @@ export function NotePane({ noteId }: { noteId: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?.id, Boolean(note?.locked), key, Boolean(opened)])
 
-  if (!note)
-    return (
-      <div className="editor-pane is-empty">
-        <div className="empty-hint">
-          No note open
-          <span>{isMac ? '⌘' : 'Ctrl+'}T for a new note</span>
-        </div>
-      </div>
-    )
+  if (!note) return <EmptyPane />
   if (note.locked) {
     if (!opened && (!content || content.id !== note.id)) return <LockedNote note={note} />
     return <NoteEditor key={note.id} note={note} html={opened?.html ?? content?.html ?? ''} readOnly={Boolean(note.deletedAt)} />

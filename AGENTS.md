@@ -42,6 +42,13 @@ features and build commands.
   see-through (macOS vibrancy, Windows 11 Mica) when `translucent` is on. A theme with `style`
   (Nothing, Pixel) also sets `<html data-style>`, and app.css's "Theme looks" section changes its
   fonts and shapes (Doto + Space Mono, Google Sans Flex; all bundled from @fontsource).
+- Shortcuts: main.cjs owns them (every menu item made with `cmd`/`item`, plus `extra`). The menu only
+  shows the keys; `onKey` (before-input-event) runs them on both platforms, before the page. Changed
+  keys live in `settings.shortcuts` (per device, not synced) and go to main through `applyShortcuts`
+  (src/lib/shortcuts.ts). Show keys with `keysLabel`/`useKeys`/`withKeys`, never hardcoded ⌘. On the
+  desktop the editor's own format keys are off (setup.ts MENU_KEYS) so a moved shortcut really moves.
+- Titles: desktop/native/titles.swift (Apple's on-device model) is built by scripts/native.mjs into
+  desktop/bin/notes-titles and shipped as an extraResource on the Mac.
 - Commands: the native menu (main.cjs `buildMenu`) sends names to `src/ui/commands.ts`; in a
   plain browser App.tsx maps shortcuts to the same names.
 - Importers (`src/import/`): each app's export format → HTML run through the editor's schema

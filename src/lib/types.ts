@@ -117,6 +117,8 @@ export interface Settings {
   checkUpdates: boolean
   translucent: boolean
   quickNoteShortcut: boolean
+  /** Keyboard shortcuts changed in Settings → Shortcuts: { command id: keys }, "" for none. */
+  shortcuts: Record<string, string>
   spellcheck: boolean
   lock?: LockSettings
   /** Passwords replaced by Reset Password: notes locked with them still open with them. */

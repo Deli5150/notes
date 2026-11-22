@@ -1,4 +1,4 @@
-import { Bug, Check, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
+import { Bug, Check, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
@@ -13,6 +13,7 @@ import { useStore } from '../lib/store'
 import { syncNow, turnOffSync, turnOnSync, useSyncState } from '../lib/syncRunner'
 import { THEMES } from '../lib/themes'
 import { useUi, type SettingsPage } from '../lib/ui'
+import { assignable, formatKeys, useKeys, useShortcuts } from '../lib/shortcuts'
 import { checkForUpdates, downloadUpdate, installUpdate, useUpdate } from '../lib/updater'
 import type { AppData, MathResults, Paper, Settings as SettingsT, SortBy, StartWith, TitleEngine } from '../lib/types'
 import { VERSION } from '../version'
@@ -31,6 +32,7 @@ const PAGES: Array<{ id: SettingsPage; label: string; icon: React.ReactNode }> =
   { id: 'sync', label: 'Google Sync', icon: <Cloud size={16} /> },
   { id: 'import', label: 'Import', icon: <Download size={16} /> },
   { id: 'export', label: 'Export & Backup', icon: <Upload size={16} /> },
+  ...(desktop ? [{ id: 'shortcuts' as const, label: 'Shortcuts', icon: <Keyboard size={16} /> }] : []),
   { id: 'updates', label: 'Updates', icon: <RefreshCw size={16} /> },
   { id: 'feedback', label: 'Feedback', icon: <MessageSquareText size={16} /> },
   { id: 'about', label: 'About', icon: <Info size={16} /> }
@@ -78,6 +80,7 @@ function Group({ title, children, footer }: { title?: string; children: React.Re
 
 function General() {
   const s = useStore(useShallow((x) => x.settings))
+  const quickKeys = useKeys('global:quick-note')
   return (
     <>
       <Group title="Notes">
@@ -148,7 +151,7 @@ function General() {
           />
         </Row>
         {desktop && (
-          <Row label="Quick Note shortcut" sub={`${isMac ? '⌃⌥' : 'Ctrl+Alt+'}N opens a new Quick Note from anywhere.`}>
+          <Row label="Quick Note shortcut" sub={quickKeys ? `${quickKeys} opens a new Quick Note from anywhere.` : 'Give it keys in Settings → Shortcuts.'}>
             <Toggle
               on={s.quickNoteShortcut}
               onChange={(v) => {
@@ -159,6 +162,15 @@ function General() {
           </Row>
         )}
       </Group>
+      {desktop ? (
+        <Group title="Keyboard shortcuts">
+          <Row label="Change any shortcut" sub="Every menu command can have its own keys.">
+            <button className="btn" onClick={() => useUi.setState({ settings: 'shortcuts' })}>
+              Shortcuts…
+            </button>
+          </Row>
+        </Group>
+      ) : (
       <Group title="Keyboard shortcuts">
         <div className="shortcuts">
           {(
@@ -188,6 +200,7 @@ function General() {
           ))}
         </div>
       </Group>
+      )}
     </>
   )
 }
@@ -811,13 +824,95 @@ const RENDER: Record<SettingsPage, () => React.ReactElement> = {
   sync: SyncPage,
   import: ImportPage,
   export: ExportPage,
+  shortcuts: ShortcutsPage,
   updates: UpdatesPage,
   feedback: FeedbackPage,
   about: AboutPage
 }
 
+function ShortcutsPage() {
+  const list = useShortcuts((s) => s.list)
+  const overrides = useStore((s) => s.settings.shortcuts)
+  const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
+  const [hint, setHint] = useState('')
+
+  const assign = (id: string, keys: string) => {
+    const next = { ...useStore.getState().settings.shortcuts }
+    const entry = useShortcuts.getState().list.find((s) => s.id === id)
+    const taken = keys ? useShortcuts.getState().list.find((s) => s.id !== id && s.keys === keys) : undefined
+    if (taken) {
+      next[taken.id] = ''
+      toast(`${formatKeys(keys)} was ${taken.label}: that now has no shortcut`)
+    }
+    if (entry && keys === entry.def) delete next[id]
+    else next[id] = keys
+    set({ shortcuts: next })
+  }
+
+  // Waiting for keys: the desktop app sends them here instead of running anything.
+  useEffect(() => {
+    if (!editing || !desktop) return
+    desktop.shortcuts.capture(true)
+    setHint('')
+    const off = desktop.shortcuts.onCaptured((keys) => {
+      if (keys === 'Escape') return setEditing(null)
+      if (keys === 'Backspace' || keys === 'Delete') {
+        assign(editing, '')
+        return setEditing(null)
+      }
+      if (!assignable(keys)) return setHint(`Include ${isMac ? '⌘, ⌃ or ⌥' : 'Ctrl or Alt'} (or use a function key)`)
+      assign(editing, keys)
+      setEditing(null)
+    })
+    return () => {
+      off()
+      desktop!.shortcuts.capture(false)
+    }
+  }, [editing])
+
+  const q = query.trim().toLowerCase()
+  const shown = list.filter((s) => !q || s.label.toLowerCase().includes(q) || s.group.toLowerCase().includes(q) || formatKeys(s.keys).toLowerCase().includes(q))
+  const groups = [...new Set(shown.map((s) => s.group))]
+  const changed = Object.keys(overrides ?? {}).length > 0
+  return (
+    <>
+      <div className="shortcuts-bar">
+        <input className="field" placeholder="Search shortcuts" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <button className="btn" disabled={!changed} onClick={() => set({ shortcuts: {} })}>
+          Reset All
+        </button>
+      </div>
+      {groups.map((g) => (
+        <Group key={g} title={g}>
+          {shown
+            .filter((s) => s.group === g)
+            .map((s) => {
+              const on = editing === s.id
+              const custom = Object.hasOwn(overrides ?? {}, s.id)
+              return (
+                <Row key={s.id} label={s.label} sub={on ? hint || 'Press the new keys. Esc cancels, Delete removes.' : s.global ? 'Works even when Notes is in the background.' : undefined}>
+                  {custom && (
+                    <button className="tb-btn is-small" title={`Back to ${formatKeys(s.def) || 'none'}`} onClick={() => assign(s.id, s.def)}>
+                      <RotateCcw size={13} />
+                    </button>
+                  )}
+                  <button className={`keys-btn${on ? ' is-on' : ''}${s.keys ? '' : ' is-none'}`} onClick={() => setEditing(on ? null : s.id)}>
+                    {on ? 'Press keys…' : formatKeys(s.keys) || 'None'}
+                  </button>
+                </Row>
+              )
+            })}
+        </Group>
+      ))}
+      <div className="set-footer">Click a shortcut, then press the keys you want. Undo, cut, copy, paste and Select All keep your system’s keys.</div>
+    </>
+  )
+}
+
 export function SettingsWindow() {
   const page = useUi((s) => s.settings)
+  const settingsKeys = useKeys('settings')
   const body = useRef<HTMLDivElement>(null)
   useEffect(() => {
     body.current?.scrollTo(0, 0)
@@ -842,7 +937,7 @@ export function SettingsWindow() {
             </button>
           ))}
           <div className="settings-nav-foot">
-            <Keyboard size={12} /> {isMac ? '⌘,' : 'Ctrl+,'} opens Settings
+            <Keyboard size={12} /> {settingsKeys || (isMac ? '⌘,' : 'Ctrl+,')} opens Settings
           </div>
         </nav>
         <div className="settings-body" ref={body}>
