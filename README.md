@@ -2,7 +2,7 @@
 
 # Delta Notes
 
-Delta Notes is a notes app with an Arc-inspired look, for **macOS**, **Windows** and **Android** (Android is an early version): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps. Once installed it’s simply called **Notes**.
+Delta Notes is a notes app with an Arc-inspired look, for **macOS**, **Windows** and **Android** (Android is an early version): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
 
 **[Download the latest release](https://github.com/Deli5150/notes/releases/latest)** · [Website](https://deli5150.github.io/notes/) · [Report a bug or request a feature](https://github.com/Deli5150/notes/issues/new/choose)
 
