@@ -2547,8 +2547,9 @@ body.is-float-window {
   height: 52px;
 }
 
-.is-phone .sidebar-hide {
-  display: none;
+.is-phone .sidebar-top .tb-btn {
+  min-width: 40px;
+  height: 40px;
 }
 
 .is-phone .search-field {

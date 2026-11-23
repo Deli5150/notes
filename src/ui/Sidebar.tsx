@@ -10,6 +10,7 @@ import { DEFAULT_FOLDER, QUICK_NOTES, type Folder, type SortBy } from '../lib/ty
 import { newFolder, newNote, newSmartFolder } from './actions'
 import { withKeys } from '../lib/shortcuts'
 import { isAndroid } from '../lib/storage'
+import { usePhone } from '../lib/phone'
 import { editFolderLook, FolderGlyph } from './FolderIcon'
 import { listSortMenu, NoteList, useListSections } from './NoteList'
 import { confirm, menuUnder, showMenu, toast, type MenuItem } from './overlays'
@@ -353,16 +354,39 @@ export function Sidebar({ width, onSettings, onFeedback }: { width: number; onSe
   const { trash } = useCounts()
   const trashOn = useUi((s) => s.source.kind === 'trash')
 
+  const phone = usePhone()
+  const icon = phone ? 19 : 15
+  const tools = (
+    <>
+      <button className={`tb-btn${trashOn ? ' is-on' : ''}`} title={trash ? `Recently Deleted (${trash})` : 'Recently Deleted'} onClick={() => useUi.getState().select(trashOn ? { kind: 'all' } : { kind: 'trash' })}>
+        <Trash2 size={icon} />
+      </button>
+      <button className="tb-btn" title="Send Feedback" onClick={onFeedback}>
+        <MessageSquareText size={icon} />
+      </button>
+      <button className="tb-btn" title="Settings" onClick={onSettings}>
+        <Settings size={icon} />
+      </button>
+    </>
+  )
+
   return (
     <aside className="sidebar" style={width ? { width } : undefined}>
       <div className="sidebar-top">
         <span className="tb-flex" />
-        <button className="tb-btn sidebar-hide" title={withKeys('Hide Sidebar', 'sidebar')} onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
-          <PanelLeftClose size={16} />
-        </button>
-        <button className="tb-btn" title={withKeys('New Note', 'new-note:tab')} onClick={() => newNote()}>
-          <SquarePen size={16} />
-        </button>
+        {phone ? (
+          // On a phone the big button makes notes; Recently Deleted, Feedback and Settings sit up here.
+          tools
+        ) : (
+          <>
+            <button className="tb-btn" title={withKeys('Hide Sidebar', 'sidebar')} onClick={() => useStore.getState().setSettings({ sidebarHidden: true })}>
+              <PanelLeftClose size={16} />
+            </button>
+            <button className="tb-btn" title={withKeys('New Note', 'new-note:tab')} onClick={() => newNote()}>
+              <SquarePen size={16} />
+            </button>
+          </>
+        )}
       </div>
       <SearchField />
       <FolderTiles />
@@ -375,15 +399,7 @@ export function Sidebar({ width, onSettings, onFeedback }: { width: number; onSe
           {sync.error ? 'Sync problem' : sync.enabled ? (busy ? 'Syncing…' : 'Synced') : isAndroid ? 'This phone' : 'This computer'}
         </button>
         <span className="tb-flex" />
-        <button className={`tb-btn${trashOn ? ' is-on' : ''}`} title={trash ? `Recently Deleted (${trash})` : 'Recently Deleted'} onClick={() => useUi.getState().select(trashOn ? { kind: 'all' } : { kind: 'trash' })}>
-          <Trash2 size={15} />
-        </button>
-        <button className="tb-btn" title="Send Feedback" onClick={onFeedback}>
-          <MessageSquareText size={15} />
-        </button>
-        <button className="tb-btn" title="Settings" onClick={onSettings}>
-          <Settings size={15} />
-        </button>
+        {!phone && tools}
       </div>
     </aside>
   )
