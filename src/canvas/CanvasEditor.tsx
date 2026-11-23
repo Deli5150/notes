@@ -12,6 +12,7 @@ import {
   Image,
   Lock,
   LockOpen,
+  MoreHorizontal,
   Minus,
   MousePointer2,
   Pencil,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { isPhone } from '../lib/phone'
+import { menuUnder } from '../ui/overlays'
 import { desktop } from '../lib/storage'
 import { saveCanvas, useCanvas } from './state'
 
@@ -46,8 +48,11 @@ const TOOLS: Array<[Tool, string, string, React.ReactNode]> = [
   ['frame', 'Frame', 'F', <Frame size={16} />]
 ]
 
-// Excalidraw's fonts are copied next to the app (vite.config.ts), so the canvas works offline.
-;(window as unknown as { EXCALIDRAW_ASSET_PATH: string }).EXCALIDRAW_ASSET_PATH = new URL('./excalidraw/', location.href).href
+/** A phone has room for these; the rest are in its More menu. */
+const PHONE_TOOLS = new Set<Tool>(['selection', 'hand', 'rectangle', 'ellipse', 'arrow', 'freedraw', 'text', 'eraser'])
+
+// Excalidraw's fonts are copied next to the app (vite.config.ts) and found through
+// EXCALIDRAW_ASSET_PATH, set in index.html before Excalidraw loads, so the canvas works offline.
 
 export default function CanvasEditor({ dark }: { dark: boolean }) {
   const open = useCanvas((s) => s.open)
@@ -93,16 +98,42 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
     setTool(t)
   }
 
+  const phone = isPhone()
+  const shown = phone ? TOOLS.filter(([t]) => PHONE_TOOLS.has(t)) : TOOLS
+  const more = (el: Element) =>
+    menuUnder(
+      el,
+      [
+        ...TOOLS.filter(([t]) => !PHONE_TOOLS.has(t)).map(([t, label, , icon]) => ({ label, icon, checked: tool === t, onClick: () => pick(t) })),
+        { separator: true },
+        {
+          label: 'Keep Tool On',
+          checked: locked,
+          onClick: () => {
+            setLocked(!locked)
+            api.current?.setActiveTool({ type: tool, locked: !locked })
+          }
+        }
+      ],
+      'right'
+    )
+
   return (
-    <div className="canvas-stage">
+    <div className={`canvas-stage${phone ? ' is-phone' : ''}`}>
       <div className="toolbar canvas-toolbar">
         <div className="tb-group canvas-tools">
-          {TOOLS.map(([t, label, key, icon]) => (
+          {phone && (
+            <button className="tb-btn" title="More tools" onClick={(e) => more(e.currentTarget)}>
+              <MoreHorizontal size={16} />
+            </button>
+          )}
+          {shown.map(([t, label, key, icon]) => (
             <button key={t} className={`tb-btn${tool === t ? ' is-on' : ''}`} title={`${label} (${key})`} aria-pressed={tool === t} onClick={() => pick(t)}>
               {icon}
             </button>
           ))}
         </div>
+        {!phone && (
         <button
           className={`tb-btn canvas-lock${locked ? ' is-on' : ''}`}
           title={locked ? 'Tool stays on after drawing (Q)' : 'Keep the tool on after drawing (Q)'}
@@ -113,6 +144,7 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
         >
           {locked ? <Lock size={15} /> : <LockOpen size={15} />}
         </button>
+        )}
         <span className="tb-flex" />
         <button className="btn btn-primary canvas-done" disabled={saving} onClick={() => void done()}>
           <Check size={15} /> {saving ? 'Saving…' : 'Done'}

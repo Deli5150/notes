@@ -3575,3 +3575,24 @@ body.is-float-window {
   bottom: calc(96px + var(--safe-bottom));
   max-width: calc(100vw - 32px);
 }
+
+/* The phone's canvas toolbar: the most-used tools, a More menu first, Done at the end. */
+.canvas-stage.is-phone .canvas-toolbar .tb-btn {
+  min-width: 34px;
+  width: 34px;
+  padding: 0;
+}
+
+.canvas-stage.is-phone .canvas-toolbar {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.canvas-stage.is-phone .canvas-done {
+  padding: 0 12px;
+}
+
+.canvas-stage.is-phone .canvas-tools {
+  gap: 0;
+  padding: 2px;
+}

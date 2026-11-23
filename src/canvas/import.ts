@@ -13,7 +13,6 @@ export async function excalidrawToHtml(json: string, title: string): Promise<str
     throw new Error('not an Excalidraw file')
   }
   if (scene.type !== 'excalidraw' || !Array.isArray(scene.elements)) throw new Error('not an Excalidraw drawing')
-  ;(window as unknown as { EXCALIDRAW_ASSET_PATH: string }).EXCALIDRAW_ASSET_PATH = new URL('./excalidraw/', location.href).href
   const { exportToBlob, restore, serializeAsJSON } = await import('@excalidraw/excalidraw')
   const data = restore(scene as never, null, null)
   const elements = data.elements.filter((e) => !e.isDeleted)

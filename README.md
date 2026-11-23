@@ -2,7 +2,7 @@
 
 # Delta Notes
 
-Delta Notes is a notes app with an Arc-inspired look, for **macOS**, **Windows** and **Android** (Android is an early version): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, twelve colour themes, Sync with Google, and importing from the other notes apps.
+Delta Notes is a notes app with an Arc-inspired look, for **macOS**, **Windows** and **Android** (Android is an early version): folders and tags, checklists and tables, sketches and recordings, locked notes, Math Notes, fourteen colour themes, Sync with Google, and importing from the other notes apps.
 
 **[Download the latest release](https://github.com/Deli5150/notes/releases/latest)** · [Website](https://deli5150.github.io/notes/) · [Report a bug or request a feature](https://github.com/Deli5150/notes/issues/new/choose)
 
@@ -10,21 +10,30 @@ Delta Notes is a notes app with an Arc-inspired look, for **macOS**, **Windows**
 
 ### Mac and Windows
 
-<p align="center"><img src="docs/screenshots/desktop-light.png" alt="Notes on the Mac: folders as pinned tiles, the note list and a note"></p>
+<p align="center"><img src="docs/screenshots/desktop-light.png" alt="Delta Notes on the Mac: folder tiles with icons, emoji and brand logos, the note list, and a note with a canvas"></p>
 
 <p align="center">
-  <img src="docs/screenshots/desktop-dark.png" width="49%" alt="The Pixel theme in dark mode">
-  <img src="docs/screenshots/desktop-nothing.png" width="49%" alt="The Nothing theme">
+  <img src="docs/screenshots/desktop-canvas.png" width="49%" alt="The canvas: Excalidraw inside a note, its tools in the toolbar">
+  <img src="docs/screenshots/desktop-tasks.png" width="49%" alt="A Smart Folder filled from GitHub issues, with each task's status and Clear Completed">
 </p>
+<p align="center">
+  <img src="docs/screenshots/desktop-services.png" width="49%" alt="Connected Services: GitHub, Todoist, Linear, Jira and Google Tasks">
+  <img src="docs/screenshots/desktop-dark.png" width="49%" alt="The Pixel theme in dark mode">
+</p>
+<p align="center"><img src="docs/screenshots/desktop-nothing.png" width="49%" alt="The Nothing theme"></p>
 
 ### Android
 
 <p align="center">
-  <img src="docs/screenshots/android-list.png" width="19%" alt="Notes list on Android">
-  <img src="docs/screenshots/android-note.png" width="19%" alt="A note on Android">
-  <img src="docs/screenshots/android-dark.png" width="19%" alt="The Nothing theme on Android">
-  <img src="docs/screenshots/android-pixel.png" width="19%" alt="A checklist in the Pixel theme on Android">
-  <img src="docs/screenshots/android-settings.png" width="19%" alt="Themes in Settings on Android">
+  <img src="docs/screenshots/android-list.png" width="24%" alt="Notes list on Android">
+  <img src="docs/screenshots/android-note.png" width="24%" alt="A note with a canvas on Android">
+  <img src="docs/screenshots/android-canvas.png" width="24%" alt="The canvas on Android">
+  <img src="docs/screenshots/android-tasks.png" width="24%" alt="GitHub issues as a Smart Folder on Android">
+</p>
+<p align="center">
+  <img src="docs/screenshots/android-settings.png" width="24%" alt="Settings on Android: a list of sections">
+  <img src="docs/screenshots/android-dark.png" width="24%" alt="The Nothing theme in dark mode on Android">
+  <img src="docs/screenshots/android-pixel.png" width="24%" alt="A checklist in the Pixel theme on Android">
 </p>
 
 ## Features

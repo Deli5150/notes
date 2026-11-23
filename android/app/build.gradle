@@ -33,6 +33,10 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // `-Pscreenshots`: a separate app (its own data) for README screenshots, so the real one is untouched.
+            if (project.hasProperty('screenshots')) applicationIdSuffix '.shots'
+        }
         release {
             if (project.hasProperty('NOTES_RELEASE_STORE_FILE')) signingConfig signingConfigs.release
             minifyEnabled false

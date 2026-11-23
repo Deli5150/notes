@@ -110,7 +110,7 @@ export function FolderGlyph({ folder, size = 18 }: { folder: Pick<FolderT, 'icon
     return <Icon size={size} color={color} strokeWidth={2} />
   }
   return (
-    <span className="folder-emoji" style={{ fontSize: size * 0.95, lineHeight: 1 }}>
+    <span className="folder-emoji" style={{ fontSize: size * 1.1, lineHeight: 1 }}>
       {icon}
     </span>
   )

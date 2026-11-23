@@ -6,6 +6,8 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' app: att: data: blob:; img-src * data: blob: att: app:; media-src * data: blob: att: app:; style-src 'self' 'unsafe-inline'; font-src 'self' data: app:; connect-src *; script-src 'self' 'unsafe-inline'; frame-src https:" />
     <link rel="icon" href="./favicon.png" />
     <title>Notes</title>
+    <!-- The canvas (Excalidraw) loads its fonts from here (copied by vite.config.ts), not the internet. -->
+    <script>window.EXCALIDRAW_ASSET_PATH = new URL('./excalidraw/', location.href).href</script>
   </head>
   <body>
     <div id="root"></div>
