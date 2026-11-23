@@ -44,6 +44,9 @@ export interface DesktopBridge {
   linkPreview(url: string): Promise<LinkPreview | null>
   openExternal(url: string): void
   closeWindow(): void
+  /** A canvas is open: the menu's ⌘ shortcuts (undo, select all, duplicate…) go to it instead. */
+  setCanvasOpen(on: boolean): void
+  onCanvasKey(cb: (key: { key: string; code: string; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }) => void): () => void
   serviceFetch(url: string, init?: FetchInit): Promise<{ status: number; ok: boolean; text: string; link: string }>
   secrets: {
     get(name: string): Promise<string | null>

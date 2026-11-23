@@ -4,7 +4,7 @@ import { attachmentStore, desktop } from './storage'
 // hash of their content, so the same picture in two notes is stored once. A note's content refers
 // to them by id; the desktop app serves them as att://file/<id> (desktop/main.cjs).
 
-export type AttachmentKind = 'image' | 'sketch' | 'audio' | 'video' | 'pdf' | 'file' | 'scan'
+export type AttachmentKind = 'image' | 'sketch' | 'canvas' | 'audio' | 'video' | 'pdf' | 'file' | 'scan'
 
 export async function hashBytes(data: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', data as BufferSource)

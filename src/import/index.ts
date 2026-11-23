@@ -14,6 +14,7 @@ import { md5 } from './md5'
 //   Samsung Notes    .sdocx files (text and pictures), or its Word / PDF / text exports
 //   Notion           "Markdown & CSV" or "HTML" export (.zip)
 //   Evernote         .enex
+//   Excalidraw       .excalidraw (each an editable canvas)
 //   Google Keep      Google Takeout (.zip, or the .json files)
 //   Bear             .bear2bk backup, or .textbundle / Markdown exports
 //   Simplenote       its export (.zip or notes.json)
@@ -400,7 +401,7 @@ export async function importFiles(files: File[], progress: Progress): Promise<Im
         if ('settings' in r) return r
         add(r)
       } else if (e === 'enex') add(await importEnex(strFromU8(bytes), file.name, progress))
-      else if (e === 'json') {
+      else if (e === 'json' && !/\.excalidraw\.json$/i.test(file.name)) {
         const r = await importJson(strFromU8(bytes), file.name, progress)
         if ('settings' in r) return r
         add(r)
@@ -421,6 +422,10 @@ export async function importFiles(files: File[], progress: Progress): Promise<Im
         const body = pages.map((p) => textToHtml(p, false)).join('<p></p>')
         const html = `<h1>${escapeHtml(title)}</h1><figure data-attachment data-att="${id}" data-kind="pdf" data-mime="application/pdf" data-name="${escapeHtml(file.name)}" data-size="${bytes.length}"></figure>${body}`
         out.notes.push(makeNote({ html: await toNoteHtml(html), folderId: loose.id, updated: file.lastModified }))
+      } else if (e === 'excalidraw' || /\.excalidraw\.json$/i.test(file.name)) {
+        const { excalidrawToHtml } = await import('../canvas/import')
+        const title = cleanName(file.name.replace(/\.excalidraw(\.json)?$/i, ''))
+        out.notes.push(makeNote({ html: await excalidrawToHtml(strFromU8(bytes), title), folderId: loose.id, updated: file.lastModified }))
       } else if (['md', 'markdown', 'txt', 'html', 'htm'].includes(e)) {
         out.notes.push(await fileNote(file.name, bytes, loose.id, undefined, file.lastModified))
       } else if (e === 'textbundle') {

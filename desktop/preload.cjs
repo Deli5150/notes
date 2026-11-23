@@ -20,6 +20,12 @@ contextBridge.exposeInMainWorld('notesApp', {
   appleNotes: () => ipcRenderer.invoke('apple-notes'),
   linkPreview: (url) => ipcRenderer.invoke('link-preview', url),
   closeWindow: () => ipcRenderer.send('close-window'),
+  setCanvasOpen: (on) => ipcRenderer.send('canvas:open', on),
+  onCanvasKey: (cb) => {
+    const listener = (_e, key) => cb(key)
+    ipcRenderer.on('canvas:key', listener)
+    return () => ipcRenderer.off('canvas:key', listener)
+  },
   serviceFetch: (url, init) => ipcRenderer.invoke('net:service', url, init),
   secrets: {
     get: (name) => ipcRenderer.invoke('secret:get', name),

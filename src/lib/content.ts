@@ -70,7 +70,7 @@ export function derive(html: string): Derived {
     const id = el.getAttribute('data-att')!
     if (!attachments.includes(id)) attachments.push(id)
     const kind = el.getAttribute('data-kind')
-    if (!thumb && (kind === 'image' || kind === 'sketch' || kind === 'scan')) thumb = id
+    if (!thumb && (kind === 'image' || kind === 'sketch' || kind === 'canvas' || kind === 'scan')) thumb = id
   })
   doc.body.querySelectorAll('[data-strokes]').forEach((el) => {
     const id = el.getAttribute('data-strokes')!

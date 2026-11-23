@@ -24,6 +24,7 @@
     "@capacitor/core": "^8.6.2",
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/share": "^8.0.3",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@fontsource-variable/google-sans-flex": "^5.3.2",
     "@fontsource/caveat": "^5.3.0",
     "@fontsource/doto": "^5.3.0",

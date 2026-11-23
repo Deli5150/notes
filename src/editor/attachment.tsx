@@ -1,11 +1,12 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from '@tiptap/react'
-import { Download, ExternalLink, FileText, Maximize2, Minimize2, Pause, PenLine, Play, Trash2 } from 'lucide-react'
+import { Download, ExternalLink, FileText, Shapes, Maximize2, Minimize2, Pause, PenLine, Play, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { attachmentBytes, attachmentUrl, formatBytes, type AttachmentKind } from '../lib/attachments'
 import { desktop, openExternal, saveFileAs } from '../lib/storage'
 import { fileIcon } from '../ui/icons'
 import { openSketch, SketchView } from './Sketch'
+import { loadScene, openCanvas } from '../canvas/state'
 
 // Everything that isn't text in a note is an attachment node: pictures, scans, sketches,
 // recordings, videos, PDFs, other files, and link previews. Its content is a file in the
@@ -84,7 +85,7 @@ export const Attachment = Node.create({
   renderHTML({ HTMLAttributes, node }) {
     const a = node.attrs as AttachmentAttrs
     const inner: unknown[] =
-      a.kind === 'image' || a.kind === 'sketch' || a.kind === 'scan'
+      a.kind === 'image' || a.kind === 'sketch' || a.kind === 'canvas' || a.kind === 'scan'
         ? [['img', { src: a.att ? `att://file/${a.att}` : (a.src ?? ''), alt: a.name }]]
         : a.kind === 'link'
           ? [['a', { href: a.src ?? '' }, a.title || a.src || '']]
@@ -141,11 +142,18 @@ function AttachmentView({ node, updateAttributes, deleteNode, selected, editor }
   const url = useUrl(a.att, a.mime)
   const editable = editor.isEditable
 
-  if (a.kind === 'image' || a.kind === 'scan' || a.kind === 'sketch') {
+  if (a.kind === 'image' || a.kind === 'scan' || a.kind === 'sketch' || a.kind === 'canvas') {
     const src = url || a.src || ''
+    // A canvas opens in the canvas editor (it fills the note while open), keeping its scene.
+    const editCanvas = async () => {
+      const attrs = await openCanvas(await loadScene(a.strokes))
+      if (attrs) updateAttributes(attrs)
+    }
     return (
-      <NodeViewWrapper className={`att att-picture is-${a.width}${selected ? ' is-selected' : ''}`} data-drag-handle>
-        {a.kind === 'sketch' && a.strokes ? (
+      <NodeViewWrapper className={`att att-picture is-${a.width}${a.kind === 'canvas' ? ' is-canvas' : ''}${selected ? ' is-selected' : ''}`} data-drag-handle>
+        {a.kind === 'canvas' && src ? (
+          <img src={src} alt="Canvas" draggable={false} onDoubleClick={() => editable && void editCanvas()} />
+        ) : a.kind === 'sketch' && a.strokes ? (
           <div onDoubleClick={() => editable && void openSketch(a, updateAttributes)}>
             <SketchView strokes={a.strokes} fallback={src} alt={a.name} />
           </div>
@@ -159,6 +167,11 @@ function AttachmentView({ node, updateAttributes, deleteNode, selected, editor }
             {a.kind === 'sketch' && (
               <button title="Edit sketch" onClick={() => void openSketch(a, updateAttributes)}>
                 <PenLine size={14} />
+              </button>
+            )}
+            {a.kind === 'canvas' && (
+              <button title="Edit canvas" onClick={() => void editCanvas()}>
+                <Shapes size={14} />
               </button>
             )}
             <button title={a.width === 'small' ? 'View as large image' : 'View as small image'} onClick={() => updateAttributes({ width: a.width === 'small' ? 'large' : 'small' })}>

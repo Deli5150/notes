@@ -1,6 +1,10 @@
 import { App as CapApp } from '@capacitor/app'
 import { ChevronLeft, SquarePen } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { useCanvas } from './canvas/state'
+
+// Excalidraw is big: loaded the first time a canvas opens.
+const CanvasEditor = lazy(() => import('./canvas/CanvasEditor'))
 import { NotePane, useEditorRef } from './editor/Editor'
 import { applyImport, importFiles } from './import'
 import * as exporter from './lib/export'
@@ -88,6 +92,7 @@ export default function App() {
   const noteId = useUi((s) => s.noteId)
   const galleryOpen = useUi((s) => s.galleryOpen)
   const browser = useUi((s) => s.attachmentsBrowser)
+  const canvasOpen = useCanvas((s) => Boolean(s.open))
   const phone = usePhone()
   const phoneNote = useUi((s) => s.phoneNote)
   // Which way the phone last moved (list → note slides in, back slides the list back), for the animation.
@@ -213,6 +218,11 @@ export default function App() {
         )}
         <Toolbar />
         <NotePane noteId={noteId} />
+        {canvasOpen && (
+          <Suspense fallback={<div className="canvas-stage is-loading" />}>
+            <CanvasEditor dark={document.documentElement.dataset.theme === 'dark'} />
+          </Suspense>
+        )}
       </>
     )
 

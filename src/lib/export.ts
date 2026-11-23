@@ -42,7 +42,7 @@ async function portableHtml(html: string, assets: 'inline' | ((id: string, name:
       } else src = assets(id, name, mime)
     }
     let el: HTMLElement
-    if (kind === 'image' || kind === 'sketch' || kind === 'scan') {
+    if (kind === 'image' || kind === 'sketch' || kind === 'canvas' || kind === 'scan') {
       el = doc.createElement('img')
       el.setAttribute('src', src)
       el.setAttribute('alt', name)

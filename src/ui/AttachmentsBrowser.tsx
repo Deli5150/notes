@@ -33,7 +33,7 @@ const GROUPS: Array<{ id: string; label: string; kinds: string[] }> = [
 ]
 
 function Tile({ item }: { item: Item }) {
-  const url = useThumb(item.kind === 'image' || item.kind === 'scan' || item.kind === 'sketch' ? (item.att ?? undefined) : undefined)
+  const url = useThumb(item.kind === 'image' || item.kind === 'scan' || item.kind === 'sketch' || item.kind === 'canvas' ? (item.att ?? undefined) : undefined)
   const open = () => {
     const n = useStore.getState().notes.find((x) => x.id === item.noteId)
     if (!n) return

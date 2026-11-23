@@ -1,3 +1,4 @@
+import { openCanvas } from '../canvas/state'
 import { Copy, FileDown, FileText, FolderInput, Lock, LockOpen, Pin, PinOff, Printer, Trash2 } from 'lucide-react'
 import { insertAttachments, insertFiles, insertLinkPreview } from '../editor/setup'
 import { captureCamera, recordAudio } from '../editor/Capture'
@@ -251,6 +252,16 @@ export async function attachFiles(accept = '*/*'): Promise<void> {
   input.accept = accept
   input.onchange = () => input.files && void insertFiles(editor, [...input.files])
   input.click()
+}
+
+/** A canvas (Excalidraw) where the cursor is: it opens over the note, and goes in on Done. */
+export async function addCanvas(): Promise<void> {
+  const editor = ed()
+  if (!editor) return
+  const at = editor.state.selection.to
+  const attrs = await openCanvas(null)
+  if (!attrs || editor.isDestroyed) return
+  editor.chain().focus().insertContentAt(Math.min(at, editor.state.doc.content.size), { type: 'attachment', attrs }).run()
 }
 
 export async function addSketch(): Promise<void> {

@@ -588,6 +588,7 @@ const IMPORTERS: Array<{ id: string; name: string; how: string; accept: string; 
   { id: 'keep', name: 'Google Keep', how: 'At takeout.google.com choose only Keep, download the .zip, then import it.', accept: '.zip,.json', color: '#fbbc04' },
   { id: 'onenote', name: 'OneNote & Word', how: 'Save pages from OneNote or documents from Word as .docx, then import them.', accept: '.docx', color: '#7719aa' },
   { id: 'bear', name: 'Bear', how: 'In Bear: File → Backup Notes (.bear2bk), or export as Markdown/TextBundle (zip it), then import.', accept: '.bear2bk,.zip,.md', color: '#dd4c4f' },
+  { id: 'excalidraw', name: 'Excalidraw', how: 'On excalidraw.com: menu → Save to… (.excalidraw), then import the file. Each drawing comes in as a note with a canvas you can keep editing.', accept: '.excalidraw,.json', color: '#6965db' },
   { id: 'obsidian', name: 'Obsidian & Markdown', how: 'Zip your vault (or pick .md files). Folders are kept, and ![[pictures]] come along.', accept: '.zip,.md,.markdown,.txt', color: '#7c3aed' },
   { id: 'simplenote', name: 'Simplenote', how: 'In Simplenote: File → Export Notes, then import the .zip.', accept: '.zip,.json', color: '#3361cc' },
   { id: 'standard', name: 'Standard Notes', how: 'Download a decrypted backup (.json) from Standard Notes, then import it.', accept: '.json', color: '#086dd6' },

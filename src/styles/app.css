@@ -3309,3 +3309,64 @@ body.is-float-window {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Canvas (src/canvas/CanvasEditor.tsx): Excalidraw over the note, its tools in our toolbar ─ */
+
+.canvas-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  animation: fade-up 0.22s var(--ease-out);
+}
+
+.canvas-stage.is-loading {
+  background: var(--bg);
+}
+
+.canvas-toolbar {
+  gap: 6px;
+}
+
+.canvas-tools {
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.canvas-tools::-webkit-scrollbar {
+  display: none;
+}
+
+.canvas-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
+.canvas-host {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  border-top: 1px solid var(--sep);
+}
+
+/* Excalidraw's own tool bar: its tools are in our toolbar row instead. */
+.canvas-host .excalidraw .shapes-section {
+  display: none;
+}
+
+.canvas-host .excalidraw {
+  --ui-font: var(--ui-font);
+}
+
+/* A canvas in a note: a picture with a light frame, so a white drawing reads on any theme. */
+.att.is-canvas img {
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--sep);
+  cursor: zoom-in;
+}

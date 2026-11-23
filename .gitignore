@@ -13,3 +13,6 @@ credentials/
 *.ipa
 .DS_Store
 .dev-data/
+
+# Copied from node_modules by vite.config.ts
+public/excalidraw/

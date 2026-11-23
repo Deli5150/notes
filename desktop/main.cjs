@@ -339,10 +339,23 @@ const keysFor = (id, def) => (Object.hasOwn(shortcutOverrides, id) ? normalizeKe
 /** Commands the floating note runs itself; the rest of the menu's keys do nothing there. */
 const FLOAT_COMMANDS = new Set(['new-note', 'new-quick-note', 'close-note', 'bold', 'italic', 'underline', 'strike', 'highlight', 'checklist', 'check', 'table', 'link', 'indent', 'outdent', 'find', 'bigger', 'smaller', 'attach', 'align'])
 
+/** A canvas is open in the main window (src/canvas/CanvasEditor.tsx). */
+let canvasOpen = false
+ipcMain.on('canvas:open', (_e, on) => (canvasOpen = Boolean(on)))
+/** With a canvas open, these keep their usual job (copy, paste, cut, quit, hide, close, settings). */
+const CANVAS_PASS = new Set(['C', 'V', 'X', 'Q', 'H', 'W', ','])
+
 function onKey(e, input, where) {
   if (input.type !== 'keyDown') return
   const keys = keysOfInput(input)
   if (!keys) return
+  // The canvas has its own ⌘ shortcuts (⌘Z, ⌘A, ⌘D, ⌘G…): the menu would take them first, so they
+  // go straight to it.
+  if (where === 'main' && canvasOpen && !capturing && keys.startsWith('CmdOrCtrl+') && !CANVAS_PASS.has(keys.split('+').pop())) {
+    e.preventDefault()
+    win?.webContents.send('canvas:key', { key: input.key, code: input.code, metaKey: input.meta, ctrlKey: input.control, shiftKey: input.shift, altKey: input.alt })
+    return
+  }
   if (capturing && where === 'main') {
     // Settings → Shortcuts is waiting for new keys: they go to it, not to the menu or the note.
     e.preventDefault()
