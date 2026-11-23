@@ -78,6 +78,13 @@ features and build commands.
   "Install unknown apps" the first time); same sheet as the desktop. Debug builds allow cleartext
   (app/src/debug) for testing it against a local server. Not done yet: Generate title beyond basic. Screenshots: a debug APK lets Chrome DevTools in
   (`adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>`), then `window.__notes`.
+- Phone Settings (Settings.tsx PhoneSettings): `settings: 'home'` is the list of sections (the
+  desktop maps it to General); sections slide in full screen; `closeSettings()` animates out,
+  `settingsBack()` is Android's back. Motion curves are --ease-* in app.css (Motion section);
+  respect prefers-reduced-motion.
+- Android "New note": QuickNoteTileService (Quick Settings tile) and res/xml/shortcuts.xml (icon
+  long-press) open MainActivity with NEW_NOTE; NotesNativePlugin sends a retained "newNote" event
+  (works from a cold start), App.tsx runs newQuickNote().
 - README screenshots live in docs/screenshots (desktop from the NOTES_SHOTS hook with
   `--force-device-scale-factor=2`; Android from `adb exec-out screencap`), made from sample notes,
   never the user's.

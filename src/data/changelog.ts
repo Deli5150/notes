@@ -22,6 +22,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       'Fourteen themes in light and dark, including Nothing and Pixel looks with their own fonts and shapes',
       'Keyboard shortcuts you can change (⌘T new note, ⌘S sidebar, ⌘W close note), Ctrl on Windows',
       'Empty notes are deleted when you leave them',
+      'On Android: Settings as a list of sections that open full screen, a New note tile for Quick Settings and the app icon’s shortcut',
+      'Smooth animations throughout (turned off when the system asks for reduced motion)',
       'In-app updates and feedback'
     ]
   }
