@@ -3355,8 +3355,10 @@ body.is-float-window {
   border-top: 1px solid var(--sep);
 }
 
-/* Excalidraw's own tool bar: its tools are in our toolbar row instead. */
-.canvas-host .excalidraw .shapes-section {
+/* Excalidraw's own tool bars (the desktop's and the phone's): its tools are in our toolbar row. */
+.canvas-host .excalidraw .shapes-section,
+.canvas-host .excalidraw .App-toolbar--mobile,
+.canvas-host .excalidraw .mobile-misc-tools-container {
   display: none;
 }
 
@@ -3369,4 +3371,156 @@ body.is-float-window {
   border-radius: 10px;
   box-shadow: 0 0 0 1px var(--sep);
   cursor: zoom-in;
+}
+
+/* ── Image Wand (src/ui/ImageWand.tsx) ──────────────────────────────────────────────────────── */
+
+.wand {
+  width: min(440px, calc(100vw - 32px));
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wand-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.wand-head .lucide {
+  color: var(--accent);
+}
+
+.wand-preview {
+  position: relative;
+  height: min(300px, 42vh);
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--field)), var(--field));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.wand-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  animation: fade-up 0.3s var(--ease-out);
+}
+
+.wand-preview img.is-drawing {
+  background: #fff;
+  object-fit: contain;
+}
+
+.wand-preview.is-busy img {
+  filter: blur(6px) saturate(0.8);
+  transition: filter 0.3s ease;
+}
+
+.wand-busy {
+  position: absolute;
+  inset: auto 0 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.wand-preview.is-busy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, color-mix(in srgb, var(--accent) 22%, transparent) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: wand-shimmer 1.4s linear infinite;
+}
+
+@keyframes wand-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+.wand-styles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--field);
+}
+
+.wand-styles button {
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--dim);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.wand-styles button.is-on {
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+
+.wand-prompt {
+  width: 100%;
+  resize: none;
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.wand-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.wand .alert-buttons .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wand-foot {
+  font-size: 11px;
+  color: var(--faint);
+  text-align: center;
+}
+
+/* The phone's note toolbar: the tools scroll sideways; lock, share and ••• stay in view. */
+.is-phone .toolbar:not(.canvas-toolbar) > .tb-group:not(:last-of-type) {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.is-phone .toolbar:not(.canvas-toolbar) > .tb-group:not(:last-of-type)::-webkit-scrollbar {
+  display: none;
+}
+
+.is-phone .toolbar:not(.canvas-toolbar) > .tb-group {
+  flex-shrink: 0;
+}
+
+.is-phone .toolbar:not(.canvas-toolbar) > .tb-flex {
+  flex: 1 1 0;
+  min-width: 4px;
 }

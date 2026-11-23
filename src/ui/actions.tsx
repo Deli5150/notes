@@ -1,3 +1,6 @@
+import type { Editor as TEditor } from '@tiptap/core'
+import { putAttachment } from '../lib/attachments'
+import { openImageWand } from './ImageWand'
 import { openCanvas } from '../canvas/state'
 import { Copy, FileDown, FileText, FolderInput, Lock, LockOpen, Pin, PinOff, Printer, Trash2 } from 'lucide-react'
 import { insertAttachments, insertFiles, insertLinkPreview } from '../editor/setup'
@@ -252,6 +255,28 @@ export async function attachFiles(accept = '*/*'): Promise<void> {
   input.accept = accept
   input.onchange = () => input.files && void insertFiles(editor, [...input.files])
   input.click()
+}
+
+/** Image Wand: a picture from a description (and the note's text), put where the cursor is. */
+export function imageWand(): void {
+  const editor = ed()
+  if (!editor) return
+  const at = editor.state.selection.to
+  openImageWand({
+    context: editor.getText({ blockSeparator: '\n' }),
+    onInsert: (img) => void insertGenerated(editor, img, at)
+  })
+}
+
+/** A generated picture as an attachment, at `at` in the note. */
+export async function insertGenerated(editor: TEditor, img: { bytes: Uint8Array; mime: string }, at: number): Promise<void> {
+  const att = await putAttachment(img.bytes)
+  if (editor.isDestroyed) return
+  editor
+    .chain()
+    .focus()
+    .insertContentAt(Math.min(at, editor.state.doc.content.size), { type: 'attachment', attrs: { att, kind: 'image', mime: img.mime, size: img.bytes.length, name: 'Image Wand', width: 'large' } })
+    .run()
 }
 
 /** A canvas (Excalidraw) where the cursor is: it opens over the note, and goes in on Done. */

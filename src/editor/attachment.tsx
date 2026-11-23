@@ -1,12 +1,14 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from '@tiptap/react'
-import { Download, ExternalLink, FileText, Shapes, Maximize2, Minimize2, Pause, PenLine, Play, Trash2 } from 'lucide-react'
+import { Download, ExternalLink, FileText, Shapes, WandSparkles, Maximize2, Minimize2, Pause, PenLine, Play, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { attachmentBytes, attachmentUrl, formatBytes, type AttachmentKind } from '../lib/attachments'
 import { desktop, openExternal, saveFileAs } from '../lib/storage'
 import { fileIcon } from '../ui/icons'
 import { openSketch, SketchView } from './Sketch'
 import { loadScene, openCanvas } from '../canvas/state'
+import { openImageWand } from '../ui/ImageWand'
+import { insertGenerated } from '../ui/actions'
 
 // Everything that isn't text in a note is an attachment node: pictures, scans, sketches,
 // recordings, videos, PDFs, other files, and link previews. Its content is a file in the
@@ -137,7 +139,7 @@ function Tools({ children }: { children: React.ReactNode }) {
   )
 }
 
-function AttachmentView({ node, updateAttributes, deleteNode, selected, editor }: ReactNodeViewProps) {
+function AttachmentView({ node, updateAttributes, deleteNode, selected, editor, getPos }: ReactNodeViewProps) {
   const a = node.attrs as AttachmentAttrs
   const url = useUrl(a.att, a.mime)
   const editable = editor.isEditable
@@ -172,6 +174,19 @@ function AttachmentView({ node, updateAttributes, deleteNode, selected, editor }
             {a.kind === 'canvas' && (
               <button title="Edit canvas" onClick={() => void editCanvas()}>
                 <Shapes size={14} />
+              </button>
+            )}
+            {(a.kind === 'canvas' || a.kind === 'sketch') && a.att && (
+              <button
+                title="Turn into a picture (Image Wand)"
+                onClick={async () => {
+                  const png = await attachmentBytes(a.att!)
+                  if (!png) return
+                  const after = (typeof getPos === 'function' ? (getPos() ?? 0) : 0) + node.nodeSize
+                  openImageWand({ from: png, onInsert: (img) => void insertGenerated(editor, img, after) })
+                }}
+              >
+                <WandSparkles size={14} />
               </button>
             )}
             <button title={a.width === 'small' ? 'View as large image' : 'View as small image'} onClick={() => updateAttributes({ width: a.width === 'small' ? 'large' : 'small' })}>

@@ -100,6 +100,16 @@ features and build commands.
   the folder. Clear Completed moves done/dropped to Recently Deleted and lists them in
   `feed.dismissed` (they return only if reopened). Test with `window.__fakeService` (made-up
   replies, see services/net.ts), never the user's tokens.
+- Canvas (src/canvas/): @excalidraw/excalidraw, lazy-loaded, over the note's card while open
+  (`useCanvas`); an attachment of kind `canvas` (picture in `att`, Excalidraw JSON in `strokes`).
+  Its tool bar is hidden by CSS and its tools are in our toolbar row. Fonts are copied into
+  public/excalidraw by vite.config.ts (not Xiaolai). On desktop, main.cjs forwards ⌘ shortcuts to an
+  open canvas (`canvas:key`, except copy/paste/cut/quit/hide/close/settings). `window.__canvas`
+  for tests. Excalidraw import: src/canvas/import.ts.
+- Image Wand (src/lib/imagegen.ts, src/ui/ImageWand.tsx): Gemini Interactions API
+  (`/v1beta/interactions`, Api-Revision 2026-05-20), the user's key in `secrets` (`gemini-key`),
+  `findImage` reads the picture wherever the reply puts it. Apple's ImageCreator answers
+  notSupported here, so no on-device option. Test with `window.__fakeService`.
 - Commands: the native menu (main.cjs `buildMenu`) sends names to `src/ui/commands.ts`; in a
   plain browser App.tsx maps shortcuts to the same names.
 - Importers (`src/import/`): each app's export format → HTML run through the editor's schema

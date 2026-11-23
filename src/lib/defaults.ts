@@ -26,7 +26,9 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarHidden: false,
   collapsedFolders: [],
   foldersCollapsed: false,
-  titleEngine: 'auto'
+  titleEngine: 'auto',
+  imageModel: 'gemini-nano-banana-2.1',
+  imageStyle: 'illustration'
 }
 
 export const systemFolders = (now = Date.now()): Folder[] => [

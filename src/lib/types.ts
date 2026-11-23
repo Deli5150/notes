@@ -175,6 +175,9 @@ export interface Settings {
   /** Generate title: on this computer, or with Claude (needs an API key on this computer). */
   /** auto: Apple Intelligence when the Mac has it, else Claude with a key, else basic. */
   titleEngine: TitleEngine
+  /** Image Wand: the Gemini image model, and the style last used. */
+  imageModel: string
+  imageStyle: 'animation' | 'illustration' | 'sketch' | 'photo'
 }
 
 export interface AppData {

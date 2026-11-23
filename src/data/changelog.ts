@@ -19,6 +19,8 @@ export const CHANGELOG: Array<{ version: string; date: string; items: string[] }
       'Sync with Google (your own Drive app folder); notes changed on two devices at once keep both versions',
       'Import from Apple Notes, Samsung Notes, Notion, Evernote, Google Keep, Bear, Simplenote, Standard Notes, Obsidian/Markdown, Word, PDF, text and HTML',
       'Export to PDF, Markdown, HTML and plain text; print; full backups',
+      'Canvas: Excalidraw in your notes (shapes, arrows, lines, drawing, text, pictures, frames, styles and layers), its tools in the toolbar; import .excalidraw files',
+      'Image Wand: make a picture from a description or turn a canvas or sketch into one (Google Gemini, with your own API key)',
       'Fourteen themes in light and dark, including Nothing and Pixel looks with their own fonts and shapes',
       'Keyboard shortcuts you can change (⌘T new note, ⌘S sidebar, ⌘W close note), Ctrl on Windows',
       'Empty notes are deleted when you leave them',

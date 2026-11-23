@@ -842,7 +842,7 @@ ipcMain.handle('gtasks:fetch', (_e, url, init) => google.tasks.authFetch(url, in
 // Requests to connected services (Settings → Connected Services) made from here, where the
 // services' CORS rules don't apply (Jira's API, for one, can't be called from a page). Only these
 // hosts, only https.
-const SERVICE_HOSTS = [/^api\.github\.com$/, /^api\.todoist\.com$/, /^api\.linear\.app$/, /^[a-z0-9-]+\.atlassian\.net$/]
+const SERVICE_HOSTS = [/^generativelanguage\.googleapis\.com$/, /^api\.github\.com$/, /^api\.todoist\.com$/, /^api\.linear\.app$/, /^[a-z0-9-]+\.atlassian\.net$/]
 ipcMain.handle('net:service', async (_e, url, init = {}) => {
   const u = new URL(String(url))
   if (u.protocol !== 'https:' || !SERVICE_HOSTS.some((h) => h.test(u.hostname))) throw new Error('not a connected service')

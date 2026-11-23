@@ -12,6 +12,7 @@ import { changePassword, lockNow, resetPassword, useLock } from '../lib/lock'
 import { RELEASES_PAGE, REPO_URL } from '../lib/release'
 import { desktop, isAndroid, isMac, openExternal, secrets } from '../lib/storage'
 import { listDate } from '../lib/dates'
+import { hasImageKey, IMAGE_MODELS, NEW_KEY_URL, saveImageKey } from '../lib/imagegen'
 import { connectService, createFeedFolder, disconnectService, feedLabel, refreshFeed, targetOptions, useServices } from '../lib/feeds'
 import { SERVICES, serviceById } from '../lib/services'
 import type { Service } from '../lib/services/types'
@@ -314,10 +315,67 @@ function TextPage() {
         </Row>
       </Group>
       <TitlesGroup />
+      <ImageWandGroup />
       <div className="font-preview" style={{ fontFamily: fontCss(s.fontFamily), fontSize: s.fontSize, lineHeight: s.lineHeight }}>
         <strong>The quick brown fox</strong> jumps over the lazy dog. Notes keeps your thoughts in order — and your lists checked.
       </div>
     </>
+  )
+}
+
+/** Image Wand's Gemini key and model (src/lib/imagegen.ts). */
+function ImageWandGroup() {
+  const model = useStore((s) => s.settings.imageModel)
+  const [hasKey, setHasKey] = useState<boolean | null>(null)
+  const [key, setKey] = useState('')
+  useEffect(() => {
+    void hasImageKey().then(setHasKey)
+  }, [])
+  return (
+    <Group
+      title="Image Wand"
+      footer={
+        <>
+          The ✨ wand in the toolbar makes a picture from a description (and the note’s text, if you like), and turns a canvas or sketch into a finished picture. It uses Google’s Gemini image models with your own API key, which stays on this device and is never synced; what you describe (and the drawing) is sent to Google, which charges your key for each picture.{' '}
+          <button className="link-btn" onClick={() => openExternal(NEW_KEY_URL)}>
+            Get a key at Google AI Studio
+          </button>
+        </>
+      }
+    >
+      {hasKey ? (
+        <Row label="Gemini API key" sub="Saved on this device.">
+          <button
+            className="btn"
+            onClick={async () => {
+              await saveImageKey(null)
+              setHasKey(false)
+            }}
+          >
+            Remove Key
+          </button>
+        </Row>
+      ) : (
+        <Row label="Gemini API key" sub="Paste a key to use Image Wand.">
+          <input className="field is-key" type="password" placeholder="AIza…" value={key} onChange={(e) => setKey(e.target.value)} />
+          <button
+            className="btn btn-primary"
+            disabled={!key.trim()}
+            onClick={async () => {
+              await saveImageKey(key)
+              setKey('')
+              setHasKey(true)
+              toast('Image Wand is ready')
+            }}
+          >
+            Save
+          </button>
+        </Row>
+      )}
+      <Row label="Model">
+        <Select<string> value={model || IMAGE_MODELS[0][0]} options={IMAGE_MODELS} onChange={(v) => set({ imageModel: v })} />
+      </Row>
+    </Group>
   )
 }
 

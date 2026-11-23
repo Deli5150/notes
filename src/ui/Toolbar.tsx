@@ -1,5 +1,5 @@
 import { useEditorState } from '@tiptap/react'
-import { ChevronLeft, Shapes, ALargeSmall, AudioLines, Inbox, ListChecks, Lock, LockOpen, MoreHorizontal, Paperclip, PanelLeft, Share, SquarePen, Table } from 'lucide-react'
+import { ChevronLeft, Shapes, WandSparkles, ALargeSmall, AudioLines, Inbox, ListChecks, Lock, LockOpen, MoreHorizontal, Paperclip, PanelLeft, Share, SquarePen, Table } from 'lucide-react'
 import { listDate } from '../lib/dates'
 import { FolderGlyph } from './FolderIcon'
 import { useState } from 'react'
@@ -9,6 +9,7 @@ import { noteById, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import {
   addCanvas,
+  imageWand,
   addRecording,
   attachMenu,
   checklistMenu,
@@ -134,6 +135,9 @@ export function Toolbar() {
         </button>
         <button className="tb-btn" title="Canvas: shapes, arrows, drawing and text" disabled={!noteEditable} onClick={() => void addCanvas()}>
           <Shapes size={16} />
+        </button>
+        <button className="tb-btn" title="Image Wand: make a picture" disabled={!noteEditable} onClick={() => imageWand()}>
+          <WandSparkles size={16} />
         </button>
         <button className="tb-btn" title="Attach" disabled={!noteEditable} onClick={(e) => menuUnder(e.currentTarget, attachMenu())}>
           <Paperclip size={16} />

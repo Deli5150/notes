@@ -125,7 +125,7 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
             // For tests (like window.__notes): the open canvas and Excalidraw's helpers.
             ;(window as unknown as { __canvas: unknown }).__canvas = { api: a, convertToExcalidrawElements, done }
           }}
-          initialData={open.scene ? { elements: open.scene.elements as never, appState: { ...(open.scene.appState ?? {}), collaborators: new Map() } as never, files: (open.scene.files ?? {}) as never, scrollToContent: true } : { appState: { viewBackgroundColor: dark ? '#121212' : '#ffffff' } }}
+          initialData={open.scene ? { elements: open.scene.elements as never, appState: { ...(open.scene.appState ?? {}), collaborators: new Map() } as never, files: (open.scene.files ?? {}) as never, scrollToContent: true } : { appState: { viewBackgroundColor: '#ffffff' } }}
           theme={dark ? 'dark' : 'light'}
           handleKeyboardGlobally
           aiEnabled={false}

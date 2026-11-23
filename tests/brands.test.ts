@@ -29,3 +29,12 @@ test('a whole-word match comes before a longer word', async () => {
   const top = searchEmoji(await loadEmoji(), 'plane')[0]
   assert.ok(top.label.includes('airplane'), top.label)
 })
+
+test('Image Wand finds the picture wherever the answer puts it', async () => {
+  const { findImage } = await import('../src/lib/imagegen.ts')
+  const data = 'A'.repeat(200)
+  assert.equal(findImage({ output_image: { type: 'image', mime_type: 'image/png', data } })?.data, data)
+  assert.equal(findImage({ steps: [{ model_output: { content: [{ type: 'text', text: 'hi' }, { type: 'image', mime_type: 'image/jpeg', data }] } }] })?.mime, 'image/jpeg')
+  assert.equal(findImage({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data } }] } }] })?.data, data)
+  assert.equal(findImage({ text: 'no picture' }), null)
+})
