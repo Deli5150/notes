@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the Notes icon: "New note". -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_note"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_note">
+        <intent
+            android:action="app.notes.android.NEW_NOTE"
+            android:targetPackage="app.notes.android"
+            android:targetClass="app.notes.android.MainActivity" />
+    </shortcut>
+</shortcuts>

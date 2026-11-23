@@ -6,10 +6,10 @@ import { applyImport, importFiles } from './import'
 import * as exporter from './lib/export'
 import * as lock from './lib/lock'
 import { dropIfBlank, flushSave, useStore } from './lib/store'
-import { paintBars, startInsets } from './lib/android'
+import { onNewNoteRequest, paintBars, startInsets } from './lib/android'
 import { backToList, usePhone } from './lib/phone'
 import { desktop, isAndroid, isMac } from './lib/storage'
-import { newNote } from './ui/actions'
+import { newNote, newQuickNote } from './ui/actions'
 import { startSync, syncNow } from './lib/syncRunner'
 import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
@@ -22,7 +22,7 @@ import { AttachmentsBrowser } from './ui/AttachmentsBrowser'
 import { runCommand } from './ui/commands'
 import { Gallery } from './ui/NoteList'
 import { OverlayHost, ToastHost } from './ui/overlays'
-import { SettingsWindow } from './ui/Settings'
+import { SettingsWindow, settingsBack } from './ui/Settings'
 import { Sidebar } from './ui/Sidebar'
 import { Toolbar } from './ui/Toolbar'
 import { UpdateSheet, useUpdateSheet } from './ui/UpdateSheet'
@@ -90,6 +90,15 @@ export default function App() {
   const browser = useUi((s) => s.attachmentsBrowser)
   const phone = usePhone()
   const phoneNote = useUi((s) => s.phoneNote)
+  // Which way the phone last moved (list → note slides in, back slides the list back), for the animation.
+  // Kept until the next move, so a re-render mid-slide doesn't cut it short.
+  const lastPhoneNote = useRef(phoneNote)
+  const phoneMoveRef = useRef('')
+  if (lastPhoneNote.current !== phoneNote) {
+    phoneMoveRef.current = phoneNote ? ' is-push' : ' is-pop'
+    lastPhoneNote.current = phoneNote
+  }
+  const phoneMove = phoneMoveRef.current
   const settingsOpen = useUi((s) => Boolean(s.settings))
   const [, setDarkTick] = useState(0)
 
@@ -128,13 +137,18 @@ export default function App() {
     startWindowSync()
     void startFeeds()
     startInsets()
+    // Android's Quick Settings tile / the icon's shortcut: straight to a new Quick Note.
+    onNewNoteRequest(() => {
+      useUi.setState({ settings: null })
+      newQuickNote()
+    })
     // Android's back button (or gesture): close what's on top, then back to the list, then out.
     const back = isAndroid
       ? CapApp.addListener('backButton', () => {
           const ui = useUi.getState()
           if (document.querySelector('.menu, .dialog')) dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
           else if (useUpdateSheet.getState().open) useUpdateSheet.setState({ open: false })
-          else if (ui.settings) useUi.setState({ settings: null })
+          else if (ui.settings) settingsBack()
           else if (ui.findOpen) useUi.setState({ findOpen: false })
           else if (ui.phoneNote) backToList()
           else void CapApp.minimizeApp()
@@ -207,16 +221,16 @@ export default function App() {
     return (
       <div className={`app ${platform} is-phone`}>
         {phoneNote && noteId ? (
-          <main className="stage">
+          <main className={`stage${phoneMove}`}>
             <div className="card">{main}</div>
           </main>
         ) : (
-          <>
-            <Sidebar width={0} onSettings={() => useUi.setState({ settings: 'general' })} onFeedback={() => useUi.setState({ settings: 'feedback' })} />
+          <div className={`phone-list${phoneMove}`}>
+            <Sidebar width={0} onSettings={() => useUi.setState({ settings: 'home' })} onFeedback={() => useUi.setState({ settings: 'feedback' })} />
             <button className="phone-fab" aria-label="New Note" onClick={() => newNote()}>
               <SquarePen size={22} />
             </button>
-          </>
+          </div>
         )}
         <SettingsWindow />
         <UpdateSheet />

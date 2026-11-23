@@ -2,6 +2,10 @@
    note, and a slim toolbar. Colours come from the theme (src/lib/themes.ts) as CSS variables. */
 
 :root {
+  /* Motion: one set of curves for the whole app. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 0.75, 0.2);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1.08);
   --ui-font: Inter, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --radius: 8px;
   --toolbar-h: 52px;
@@ -1172,13 +1176,14 @@ select.field {
   backdrop-filter: blur(30px) saturate(1.6);
   box-shadow: var(--shadow);
   font-size: 13px;
-  animation: pop 0.1s ease-out;
+  transform-origin: top left;
+  animation: pop 0.14s var(--ease-out);
 }
 
 @keyframes pop {
   from {
     opacity: 0;
-    transform: scale(0.98);
+    transform: scale(0.96);
   }
 }
 
@@ -1256,7 +1261,7 @@ select.field {
   background: rgba(0, 0, 0, 0.22);
   display: grid;
   place-items: center;
-  animation: fade 0.12s ease-out;
+  animation: fade 0.16s ease-out;
 }
 
 @keyframes fade {
@@ -1272,7 +1277,7 @@ select.field {
   border-radius: 14px;
   background: var(--bg);
   box-shadow: var(--shadow);
-  animation: pop 0.14s ease-out;
+  animation: pop 0.2s var(--ease-out);
 }
 
 .dialog.is-wide {
@@ -1334,7 +1339,7 @@ select.field {
   background: var(--menu);
   backdrop-filter: blur(30px);
   box-shadow: var(--shadow);
-  animation: pop 0.15s ease-out;
+  animation: toast-in 0.26s var(--ease-out);
   font-weight: 500;
 }
 
@@ -1399,7 +1404,7 @@ select.field {
   overflow: hidden;
   background: var(--bg);
   box-shadow: var(--shadow);
-  animation: pop 0.14s ease-out;
+  animation: pop 0.22s var(--ease-out);
 }
 
 .settings-nav {
@@ -1558,6 +1563,10 @@ select.field {
   align-items: flex-start;
   margin-bottom: 18px;
   color: var(--accent);
+}
+
+.set-hero > svg {
+  flex: none;
 }
 
 .set-hero > div {
@@ -1942,7 +1951,7 @@ kbd {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  animation: slideup 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  animation: slideup 0.34s var(--ease-spring);
 }
 
 @keyframes slideup {
@@ -2634,48 +2643,7 @@ body.is-float-window {
   padding: 8px 18px calc(120px + var(--safe-bottom));
 }
 
-/* Settings fill the screen, with the pages as a row of chips at the top. */
-.is-phone .scrim {
-  place-items: stretch;
-}
 
-.is-phone .settings {
-  width: 100%;
-  height: 100%;
-  border-radius: 0;
-  flex-direction: column;
-}
-
-.is-phone .settings-nav {
-  width: auto;
-  flex: none;
-  flex-direction: row;
-  overflow-x: auto;
-  /* Its colour runs up behind the status bar. */
-  padding: calc(8px + var(--safe-top)) 10px 8px;
-  gap: 4px;
-  scrollbar-width: none;
-}
-
-.is-phone .settings-nav-title,
-.is-phone .settings-nav-foot {
-  display: none;
-}
-
-.is-phone .settings-nav-item {
-  flex: none;
-  height: 34px;
-  white-space: nowrap;
-}
-
-.is-phone .settings-body {
-  flex: 1;
-  padding-bottom: var(--safe-bottom);
-}
-
-.is-phone .settings-body {
-  padding: 0 16px calc(20px + var(--safe-bottom));
-}
 
 /* Too narrow for the folder and date beside the tools: Move is in the ••• menu. */
 .is-phone .toolbar .crumb {
@@ -2979,4 +2947,365 @@ body.is-float-window {
   font-weight: 600;
   color: var(--dim);
   padding: 2px 2px 0;
+}
+
+/* ── Phone Settings: a list of sections, each opening full screen ─────────────────────────── */
+
+.scrim.is-phone-settings {
+  background: var(--sidebar-solid);
+  place-items: stretch;
+  animation: phone-sheet-in 0.34s var(--ease-out);
+}
+
+.phone-settings {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar-solid);
+}
+
+.phone-settings.is-page {
+  background: var(--bg);
+}
+
+.phone-settings.is-in {
+  animation: push-in 0.32s var(--ease-out);
+}
+
+.phone-settings.is-back {
+  animation: pop-in 0.32s var(--ease-out);
+}
+
+.ps-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: calc(56px + var(--safe-top));
+  padding: var(--safe-top) 8px 0 18px;
+}
+
+.ps-title {
+  flex: 1;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ps-head.is-sub {
+  padding-left: 4px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.ps-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 40px;
+  padding: 0 8px 0 2px;
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 500;
+  flex: none;
+}
+
+.ps-subtitle {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Centred on the screen, whatever the back button's width. */
+  margin-right: 34px;
+}
+
+.ps-head .tb-btn {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+
+.ps-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 16px calc(28px + var(--safe-bottom));
+}
+
+.ps-group {
+  border-radius: 14px;
+  background: var(--bg);
+  overflow: hidden;
+  margin-bottom: 18px;
+  box-shadow: 0 0 0 0.5px var(--sep);
+}
+
+.ps-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 0 12px 0 14px;
+  text-align: left;
+  font-size: 16px;
+  color: var(--text);
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.ps-row + .ps-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 56px;
+  right: 0;
+  border-top: 1px solid var(--sep);
+}
+
+.ps-row:active {
+  background: var(--hover);
+}
+
+.ps-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.ps-icon svg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}
+
+.ps-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.ps-chevron {
+  color: var(--faint);
+  flex: none;
+}
+
+.ps-foot {
+  text-align: center;
+  font-size: 12px;
+  color: var(--faint);
+  padding: 4px 0 8px;
+}
+
+/* A section's own page on a phone: rows stack when they don't fit side by side. */
+.phone-settings .settings-body {
+  padding: 14px 16px calc(28px + var(--safe-bottom));
+}
+
+.phone-settings .set-row {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.phone-settings .set-label {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.phone-settings .set-control {
+  flex: 0 1 auto;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.phone-settings .set-control .field,
+.phone-settings .set-control select {
+  max-width: 100%;
+}
+
+.phone-settings .set-hero {
+  gap: 12px;
+}
+
+.phone-settings .theme-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.phone-settings .import-grid {
+  grid-template-columns: 1fr;
+}
+
+.phone-settings .svc-form {
+  padding-left: 0;
+}
+
+.phone-settings .svc-form-foot {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.phone-settings .shortcuts {
+  grid-template-columns: 1fr;
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────────────────────────── */
+
+@keyframes push-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    transform: translateX(-28%);
+    opacity: 0.6;
+  }
+}
+
+@keyframes phone-sheet-in {
+  from {
+    transform: translateY(6%);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.96);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Closing Settings (and dialogs that use the scrim): out the way they came. */
+.scrim.is-leaving {
+  animation: fade-out 0.17s var(--ease-in) forwards;
+}
+
+.scrim.is-leaving .settings {
+  animation: pop-out 0.17s var(--ease-in) forwards;
+}
+
+.scrim.is-phone-settings.is-leaving {
+  animation: phone-sheet-out 0.17s var(--ease-in) forwards;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes phone-sheet-out {
+  to {
+    opacity: 0;
+    transform: translateY(6%);
+  }
+}
+
+/* Moving between a Settings section and the next on the desktop. */
+.settings-page {
+  animation: fade-up 0.22s var(--ease-out);
+}
+
+/* Opening a note: its page settles in. */
+.editor-scroll {
+  animation: fade-up 0.2s var(--ease-out);
+}
+
+/* The phone: list → note slides in from the right; back slides the list in again. */
+.is-phone .stage.is-push {
+  animation: push-in 0.32s var(--ease-out);
+}
+
+.phone-list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.phone-list.is-pop {
+  animation: pop-in 0.32s var(--ease-out);
+}
+
+/* The phone's note slides over the list: the note itself needn't fade up as well. */
+.is-phone .stage.is-push .editor-scroll {
+  animation: none;
+}
+
+/* Things you press respond. */
+.tb-btn,
+.btn,
+.tile,
+.note-row,
+.chip,
+.icon-cell,
+.emoji-cell,
+.switcher,
+.settings-nav-item,
+.import-card,
+.theme-card,
+.clear-done,
+.keys-btn,
+.icon-tabs button,
+.color-dot {
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s var(--ease-out),
+    opacity 0.15s ease;
+}
+
+.tile:active,
+.btn:active,
+.phone-fab:active,
+.import-card:active,
+.theme-card:active,
+.icon-cell:active,
+.emoji-cell:active,
+.color-dot:active {
+  transform: scale(0.96);
+}
+
+.phone-fab {
+  transition: transform 0.18s var(--ease-spring), box-shadow 0.18s ease;
+}
+
+/* Folder tiles appear softly when the section opens. */
+.tiles {
+  animation: fade-up 0.22s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

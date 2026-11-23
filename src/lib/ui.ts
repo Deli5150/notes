@@ -4,7 +4,8 @@ import type { Source } from './query'
 // What's selected and open on screen (not saved with your notes).
 
 export type Pane = 'sidebar' | 'list' | 'editor'
-export type SettingsPage = 'general' | 'appearance' | 'editor' | 'sync' | 'import' | 'export' | 'lock' | 'services' | 'shortcuts' | 'updates' | 'feedback' | 'about'
+/** 'home' is the phone's list of sections (the desktop shows General instead). */
+export type SettingsPage = 'home' | 'general' | 'appearance' | 'editor' | 'sync' | 'import' | 'export' | 'lock' | 'services' | 'shortcuts' | 'updates' | 'feedback' | 'about'
 
 interface UiState {
   source: Source

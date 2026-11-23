@@ -1,6 +1,8 @@
-import { Bug, Check, FileText, Plug, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
+import { Bug, Check, ChevronLeft, ChevronRight, FileText, Plug, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
+import { usePhone } from '../lib/phone'
 import { CHANGELOG } from '../data/changelog'
 import { FONT_FAMILIES, fontCss } from '../editor/setup'
 import { exportAllMarkdown, exportBackup } from '../lib/export'
@@ -175,7 +177,7 @@ function General() {
             </button>
           </Row>
         </Group>
-      ) : (
+      ) : isAndroid ? null : (
       <Group title="Keyboard shortcuts">
         <div className="shortcuts">
           {(
@@ -990,7 +992,7 @@ function FeedbackPage() {
       <input className="field" placeholder={kind === 'bug' ? 'What went wrong, in a few words' : 'Your idea, in a few words'} value={title} onChange={(e) => setTitle(e.target.value)} />
       <textarea className="field feedback-text" placeholder={kind === 'bug' ? 'What did you do, what did you expect, and what happened instead?' : 'What should Notes do, and why would it help?'} value={text} onChange={(e) => setText(e.target.value)} />
       <div className="feedback-foot">
-        <span className="set-sub">Notes {VERSION} · {desktop ? (desktop.platform === 'darwin' ? 'Mac' : desktop.platform === 'win32' ? 'Windows' : 'Linux') : 'Web'}</span>
+        <span className="set-sub">Delta Notes {VERSION} · {desktop ? (desktop.platform === 'darwin' ? 'Mac' : desktop.platform === 'win32' ? 'Windows' : 'Linux') : isAndroid ? 'Android' : 'Web'}</span>
         <button
           className="btn btn-primary"
           disabled={!title.trim()}
@@ -1042,6 +1044,7 @@ function AboutPage() {
 }
 
 const RENDER: Record<SettingsPage, () => React.ReactElement> = {
+  home: General,
   general: General,
   appearance: Appearance,
   editor: TextPage,
@@ -1136,23 +1139,131 @@ function ShortcutsPage() {
   )
 }
 
+/** Settings closing: a short animation out, then gone. Use this rather than settings: null. */
+const useLeaving = create<{ leaving: boolean }>(() => ({ leaving: false }))
+export function closeSettings(): void {
+  if (useLeaving.getState().leaving || !useUi.getState().settings) return
+  useLeaving.setState({ leaving: true })
+  setTimeout(() => {
+    useUi.setState({ settings: null })
+    useLeaving.setState({ leaving: false })
+  }, 170)
+}
+
+/** The phone's Settings: which way the last move went, for the slide. */
+const usePhoneNav = create<{ dir: 'in' | 'back' | null }>(() => ({ dir: null }))
+const goSettings = (page: SettingsPage) => {
+  usePhoneNav.setState({ dir: page === 'home' ? 'back' : 'in' })
+  useUi.setState({ settings: page })
+}
+/** Android's back button in Settings: from a section to the list, then out. */
+export function settingsBack(): void {
+  if (useUi.getState().settings === 'home') closeSettings()
+  else goSettings('home')
+}
+
+// The phone's list of sections, grouped, each with its own coloured tile.
+const PHONE_GROUPS: SettingsPage[][] = [
+  ['general', 'appearance', 'editor', 'lock'],
+  ['sync', 'services'],
+  ['import', 'export'],
+  ['updates', 'feedback', 'about']
+]
+const TILE: Partial<Record<SettingsPage, string>> = {
+  general: '#8e8e93',
+  appearance: '#5e5ce6',
+  editor: '#0a84ff',
+  lock: '#ff9f0a',
+  sync: '#30b0c7',
+  services: '#ff375f',
+  import: '#34c759',
+  export: '#32ade6',
+  updates: '#64748b',
+  feedback: '#ff9500',
+  about: '#8e8e93'
+}
+
+function PhoneSettings({ page }: { page: SettingsPage }) {
+  const dir = usePhoneNav((s) => s.dir)
+  const close = closeSettings
+  if (page === 'home')
+    return (
+      <div className={`phone-settings${dir === 'back' ? ' is-back' : ''}`} key="home">
+        <div className="ps-head">
+          <span className="ps-title">Settings</span>
+          <button className="tb-btn" aria-label="Close Settings" onClick={close}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="ps-scroll">
+          {PHONE_GROUPS.map((group, i) => (
+            <div className="ps-group" key={i}>
+              {group.map((id) => {
+                const p = PAGES.find((x) => x.id === id)
+                if (!p) return null
+                return (
+                  <button key={id} className="ps-row" onClick={() => goSettings(id)}>
+                    <span className="ps-icon" style={{ background: TILE[id] ?? 'var(--accent)' }}>
+                      {p.icon}
+                    </span>
+                    <span className="ps-label">{p.label}</span>
+                    <ChevronRight size={18} className="ps-chevron" />
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+          <div className="ps-foot">Delta Notes {VERSION}</div>
+        </div>
+      </div>
+    )
+  const Page = RENDER[page]
+  return (
+    <div className={`phone-settings is-page${dir === 'in' ? ' is-in' : ''}`} key={page}>
+      <div className="ps-head is-sub">
+        <button className="ps-back" onClick={() => goSettings('home')}>
+          <ChevronLeft size={22} />
+          Settings
+        </button>
+        <span className="ps-subtitle">{PAGES.find((p) => p.id === page)?.label}</span>
+        <button className="tb-btn" aria-label="Close Settings" onClick={close}>
+          <X size={20} />
+        </button>
+      </div>
+      <div className="ps-scroll settings-body">
+        <Page />
+      </div>
+    </div>
+  )
+}
+
 export function SettingsWindow() {
-  const page = useUi((s) => s.settings)
+  const shown = useUi((s) => s.settings)
+  const leaving = useLeaving((s) => s.leaving)
+  const phone = usePhone()
+  // The desktop has no list page: it opens on General.
+  const page = shown === 'home' && !phone ? 'general' : shown
   const settingsKeys = useKeys('settings')
   const body = useRef<HTMLDivElement>(null)
   useEffect(() => {
     body.current?.scrollTo(0, 0)
   }, [page])
   useEffect(() => {
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && useUi.setState({ settings: null })
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && closeSettings()
     addEventListener('keydown', key)
     return () => removeEventListener('keydown', key)
   }, [])
   if (!page) return null
+  if (phone)
+    return (
+      <div className={`scrim is-phone-settings${leaving ? ' is-leaving' : ''}`}>
+        <PhoneSettings page={page} />
+      </div>
+    )
   const Page = RENDER[page]
-  const close = () => useUi.setState({ settings: null })
+  const close = closeSettings
   return (
-    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+    <div className={`scrim${leaving ? ' is-leaving' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div className="settings">
         <nav className="settings-nav">
           <div className="settings-nav-title">Settings</div>
@@ -1173,7 +1284,9 @@ export function SettingsWindow() {
               <X size={16} />
             </button>
           </div>
-          <Page />
+          <div className="settings-page" key={page}>
+            <Page />
+          </div>
         </div>
       </div>
     </div>

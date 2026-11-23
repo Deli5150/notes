@@ -8,6 +8,7 @@ interface NotesNative {
   setBackground(o: { color: string; dark: boolean }): Promise<void>
   insets(): Promise<Partial<Insets>>
   addListener(event: 'insets', fn: (e: Insets) => void): Promise<{ remove(): Promise<void> }>
+  addListener(event: 'newNote', fn: () => void): Promise<{ remove(): Promise<void> }>
   googleAuthorize(o: { interactive: boolean; scopes?: string[] }): Promise<{ accessToken: string }>
   downloadUpdate(o: { url: string; name: string; sha256?: string }): Promise<{ path: string }>
   installUpdate(o: { path: string }): Promise<{ needsPermission?: boolean; missing?: boolean }>
@@ -35,6 +36,11 @@ export function startInsets(): void {
   }
   void native.insets().then(apply)
   void native.addListener('insets', apply)
+}
+
+/** The Quick Settings tile or the app icon's "New note" shortcut asked for a new note. */
+export function onNewNoteRequest(fn: () => void): void {
+  void native?.addListener('newNote', fn)
 }
 
 /** The in-app updater's native half (src/lib/updater.ts). */

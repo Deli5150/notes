@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name">Notes</string>
     <string name="title_activity_main">Notes</string>
+    <string name="tile_new_note">New note</string>
+    <string name="shortcut_new_note">New note</string>
     <string name="package_name">app.notes.android</string>
     <string name="custom_url_scheme">app.notes.android</string>
 </resources>

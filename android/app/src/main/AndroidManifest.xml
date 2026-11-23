@@ -22,7 +22,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+
         </activity>
+
+        <!-- "New note" in Quick Settings (swipe down, edit the tiles to add it). -->
+        <service
+            android:name=".QuickNoteTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_note"
+            android:label="@string/tile_new_note"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="false" />
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -106,8 +106,25 @@ public class NotesNativePlugin extends Plugin {
         call.resolve(insets);
     }
 
+    // ── A new note from outside the app ────────────────────────────────────────────────────
+    // The Quick Settings tile and the app icon's shortcut open Notes with NEW_NOTE: the page
+    // hears "newNote" (kept until it listens, for when Notes is only just starting).
+
+    private void checkNewNote(Intent intent) {
+        if (intent == null || !MainActivity.NEW_NOTE.equals(intent.getAction())) return;
+        intent.setAction(Intent.ACTION_MAIN);
+        notifyListeners("newNote", new JSObject(), true);
+    }
+
+    @Override
+    protected void handleOnNewIntent(Intent intent) {
+        super.handleOnNewIntent(intent);
+        checkNewNote(intent);
+    }
+
     @Override
     public void load() {
+        checkNewNote(getActivity().getIntent());
         edgeToEdge();
         consent = getActivity().registerForActivityResult(new ActivityResultContracts.StartIntentSenderForResult(), (result) -> {
             PluginCall call = waiting;
