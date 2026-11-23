@@ -14,3 +14,18 @@ test('near-black and near-white logos use the theme instead', () => {
   assert.equal(usableColour('181717'), undefined)
   assert.equal(usableColour('1DB954'), '#1DB954')
 })
+
+test('emoji search finds by name and keyword', async () => {
+  const { loadEmoji, searchEmoji } = await import('../src/lib/emoji.ts')
+  const list = await loadEmoji()
+  assert.ok(list.length > 1500)
+  assert.equal(searchEmoji(list, 'pizza')[0].emoji, '🍕')
+  assert.ok(searchEmoji(list, 'pepperoni').some((e) => e.emoji === '🍕'))
+  assert.ok(!list.some((e) => e.group === 2))
+})
+
+test('a whole-word match comes before a longer word', async () => {
+  const { loadEmoji, searchEmoji } = await import('../src/lib/emoji.ts')
+  const top = searchEmoji(await loadEmoji(), 'plane')[0]
+  assert.ok(top.label.includes('airplane'), top.label)
+})

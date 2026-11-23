@@ -47,6 +47,7 @@
     "@tiptap/pm": "^3.35.0",
     "@tiptap/react": "^3.35.0",
     "@tiptap/starter-kit": "^3.35.0",
+    "emojibase-data": "^18.0.0",
     "fflate": "^0.8.3",
     "lucide-react": "^1.77.0",
     "mammoth": "^1.13.0",

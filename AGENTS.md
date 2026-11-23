@@ -33,7 +33,8 @@ features and build commands.
 - Look (user's request, 2026-11-21: "don't make it look like Apple Notes"): Arc-browser style. One
   sidebar (`src/ui/Sidebar.tsx`): search, folders as pinned tiles with an icon (Lucide, emoji, or
   a brand logo from Simple Icons — `brand:<slug>` with its path kept in `folder.logo`, the set
-  loaded only when searched, src/lib/brands.ts)
+  loaded only when searched, src/lib/brands.ts; the dialog has Icons / Brand Logos / Emoji tabs,
+  emoji from emojibase-data via src/lib/emoji.ts, also loaded on first use)
   and colour (`FolderIcon.tsx`; rename, reorder by drag, drop notes on them), a switcher
   dropdown (All Notes / Quick Notes / Unfiled / Smart Folders / Tags / Recently Deleted), then
   the note list. The note is a raised card on the theme-tinted canvas; its toolbar is inside the

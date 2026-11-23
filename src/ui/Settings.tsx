@@ -1036,7 +1036,7 @@ function AboutPage() {
           </ul>
         </Group>
       ))}
-      <div className="set-footer">Not affiliated with Apple or the makers of the other apps it imports from; their names and icons belong to them. Brand logos for folders: Simple Icons (CC0). Fonts: Inter, Lora, Merriweather, Playfair Display, Nunito, JetBrains Mono and Caveat (SIL Open Font License).</div>
+      <div className="set-footer">Not affiliated with Apple or the makers of the other apps it imports from; their names and icons belong to them. Brand logos for folders: Simple Icons (CC0). Emoji data: Emojibase (MIT). Fonts: Inter, Lora, Merriweather, Playfair Display, Nunito, JetBrains Mono and Caveat (SIL Open Font License).</div>
     </>
   )
 }
