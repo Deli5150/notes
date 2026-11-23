@@ -6,6 +6,8 @@ import type { Palette } from './themes'
 
 interface NotesNative {
   setBackground(o: { color: string; dark: boolean }): Promise<void>
+  insets(): Promise<Partial<Insets>>
+  addListener(event: 'insets', fn: (e: Insets) => void): Promise<{ remove(): Promise<void> }>
   googleAuthorize(o: { interactive: boolean; scopes?: string[] }): Promise<{ accessToken: string }>
   downloadUpdate(o: { url: string; name: string; sha256?: string }): Promise<{ path: string }>
   installUpdate(o: { path: string }): Promise<{ needsPermission?: boolean; missing?: boolean }>
@@ -13,6 +15,27 @@ interface NotesNative {
 }
 
 const native = isAndroid ? registerPlugin<NotesNative>('NotesNative') : null
+
+interface Insets {
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+/**
+ * Notes fills the whole screen, behind the status and navigation bars (NotesNativePlugin), so its
+ * own background shows there. The bars' sizes come back as --safe-area-inset-*, which app.css
+ * keeps the content clear of.
+ */
+export function startInsets(): void {
+  if (!native) return
+  const apply = (i: Partial<Insets>) => {
+    for (const side of ['top', 'bottom', 'left', 'right'] as const) if (typeof i[side] === 'number') document.documentElement.style.setProperty(`--safe-area-inset-${side}`, `${i[side]}px`)
+  }
+  void native.insets().then(apply)
+  void native.addListener('insets', apply)
+}
 
 /** The in-app updater's native half (src/lib/updater.ts). */
 export const androidUpdater = native

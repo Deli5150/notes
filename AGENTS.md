@@ -64,7 +64,10 @@ features and build commands.
   package.json). Data: notes.json via @capacitor/filesystem (storage.ts, `isAndroid`), attachments
   in IndexedDB. Phones (≤700px, src/lib/phone.ts) show one screen at a time: the sidebar, then the
   note (`ui.phoneNote`, back button / `backToList`); tablets keep the desktop layout. Native bits:
-  NotesNativePlugin.java (window colour + bar icons behind the status/navigation bars, src/lib/android.ts).
+  NotesNativePlugin.java: edge to edge on every WebView (Capacitor's SystemBars insets handling is
+  off in capacitor.config.ts; the plugin sends the bars' sizes as --safe-area-inset-*, zeroes the
+  bars for the WebView without consuming insets so the keyboard still works, and pads for the
+  keyboard), bar icon colour, sign-in, updater (src/lib/android.ts).
   Icons from assets/src/icon.svg by `npm run icons` (adaptive icon too). Google sign-in: Google's
   Android authorization API (`googleAuthorize`, play-services-auth) gives drive.appdata access
   tokens; it needs Android OAuth clients (package app.notes.android + the release and debug key

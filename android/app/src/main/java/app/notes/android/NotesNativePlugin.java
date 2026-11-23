@@ -23,7 +23,11 @@ import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Scope;
 import java.util.Arrays;
+import android.view.View;
 import android.view.Window;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.Plugin;
@@ -57,8 +61,54 @@ public class NotesNativePlugin extends Plugin {
     private ActivityResultLauncher<IntentSenderRequest> consent;
     private PluginCall waiting;
 
+    // ── Edge to edge ───────────────────────────────────────────────────────────────────────
+    // The page fills the whole screen, behind the status and navigation bars, so its own
+    // background shows there (any WebView version; Capacitor's own insets handling is off in
+    // capacitor.config.ts). The bars' sizes go to the page as --safe-area-inset-* (CSS pixels) and
+    // an "insets" event, and the keyboard pushes the page up from below.
+
+    private final JSObject insets = new JSObject();
+
+    private void edgeToEdge() {
+        Window window = getActivity().getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setNavigationBarContrastEnforced(false);
+            window.setStatusBarContrastEnforced(false);
+        }
+        View decor = window.getDecorView();
+        ViewCompat.setOnApplyWindowInsetsListener(decor, (v, all) -> {
+            Insets bars = all.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = all.getInsets(WindowInsetsCompat.Type.ime());
+            boolean keyboard = all.isVisible(WindowInsetsCompat.Type.ime());
+            // The keyboard covers the navigation bar: the page ends above it.
+            v.setPadding(0, 0, 0, keyboard ? ime.bottom : 0);
+            float density = getActivity().getResources().getDisplayMetrics().density;
+            insets.put("top", Math.round(bars.top / density));
+            insets.put("bottom", keyboard ? 0 : Math.round(bars.bottom / density));
+            insets.put("left", Math.round(bars.left / density));
+            insets.put("right", Math.round(bars.right / density));
+            notifyListeners("insets", insets);
+            // The bars are handled here (set to 0 for the WebView, not consumed: consuming them
+            // stops the keyboard and later changes reaching it).
+            return new WindowInsetsCompat.Builder(all)
+                .setInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout(), Insets.NONE)
+                .build();
+        });
+        ViewCompat.requestApplyInsets(decor);
+    }
+
+    /** The bars' sizes now (CSS pixels): { top, bottom, left, right }. */
+    @PluginMethod
+    public void insets(PluginCall call) {
+        call.resolve(insets);
+    }
+
     @Override
     public void load() {
+        edgeToEdge();
         consent = getActivity().registerForActivityResult(new ActivityResultContracts.StartIntentSenderForResult(), (result) -> {
             PluginCall call = waiting;
             waiting = null;

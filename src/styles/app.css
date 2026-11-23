@@ -2644,14 +2644,15 @@ body.is-float-window {
   height: 100%;
   border-radius: 0;
   flex-direction: column;
-  padding-top: var(--safe-top);
 }
 
 .is-phone .settings-nav {
   width: auto;
+  flex: none;
   flex-direction: row;
   overflow-x: auto;
-  padding: 8px 10px;
+  /* Its colour runs up behind the status bar. */
+  padding: calc(8px + var(--safe-top)) 10px 8px;
   gap: 4px;
   scrollbar-width: none;
 }

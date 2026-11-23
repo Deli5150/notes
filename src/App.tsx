@@ -6,7 +6,7 @@ import { applyImport, importFiles } from './import'
 import * as exporter from './lib/export'
 import * as lock from './lib/lock'
 import { dropIfBlank, flushSave, useStore } from './lib/store'
-import { paintBars } from './lib/android'
+import { paintBars, startInsets } from './lib/android'
 import { backToList, usePhone } from './lib/phone'
 import { desktop, isAndroid, isMac } from './lib/storage'
 import { newNote } from './ui/actions'
@@ -127,6 +127,7 @@ export default function App() {
     void applyShortcuts()
     startWindowSync()
     void startFeeds()
+    startInsets()
     // Android's back button (or gesture): close what's on top, then back to the list, then out.
     const back = isAndroid
       ? CapApp.addListener('backButton', () => {

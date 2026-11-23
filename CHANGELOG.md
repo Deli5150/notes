@@ -14,6 +14,7 @@ The first release of Notes, for Mac and Windows.
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
 - Connected Services: Smart Folders filled from GitHub (issues and pull requests), Todoist, Linear, Jira and Google Tasks, one read-only note per item with its open/completed/closed status, and Clear Completed at the top of the list
 - Folder icons: tabs for icons, 3,000+ brand and app logos (Simple Icons) and a full emoji picker with categories, search and recently used
+- Android: the app runs behind the status and navigation bars, so there are no odd-coloured strips at the top and bottom
 - Android app (early version): the same Notes on your phone, with a phone layout (the list, then the note full screen) and the back button, Sync with Google, and in-app updates (downloads the new APK and opens the installer)
 - Nothing theme: notes in the sidebar sit on solid cards, so they’re easy to read over the dot grid
 - Note previews in the list show the body again for notes with a title
