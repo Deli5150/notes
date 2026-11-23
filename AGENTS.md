@@ -1,6 +1,8 @@
-# Notes
+# Delta Notes
 
-A notes app for macOS, Windows and Android. See README.md for
+A notes app for macOS, Windows and Android. Its name is **Delta Notes** (README, website, About,
+update sheet, release titles); installed it's just **Notes** (productName, Android app_name,
+window titles, menus), which is also why files are `Notes-<v>…` (the updater matches them). See README.md for
 features and build commands.
 
 ## Architecture decisions

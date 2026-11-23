@@ -51,7 +51,7 @@ export function UpdateSheet() {
             <button className="tb-btn" onClick={() => useUpdateSheet.setState({ notes: false })} title="Back">
               <ChevronLeft size={18} />
             </button>
-            <div className="update-notes-title">What’s New in Notes {u.version}</div>
+            <div className="update-notes-title">What’s New in Delta Notes {u.version}</div>
           </div>
           <div className="update-notes release-notes" dangerouslySetInnerHTML={{ __html: marked.parse(u.notes || 'No release notes.', { async: false }) as string }} />
         </>
@@ -61,7 +61,7 @@ export function UpdateSheet() {
           <img className="update-icon" src="./icon.png" alt="" />
           <div className="update-pill">NEW RELEASE</div>
           <div className="update-title">Update available</div>
-          <div className="update-sub">See what’s new and get the latest version of Notes.</div>
+          <div className="update-sub">See what’s new and get the latest version of Delta Notes.</div>
           <div className="update-versions">
             {u.current} → <strong>{u.version}</strong>
           </div>

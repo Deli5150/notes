@@ -1,5 +1,5 @@
 name: Bug
-description: Something in Notes isn't working right
+description: Something in Delta Notes isn't working right
 labels: [bug]
 body:
   - type: textarea

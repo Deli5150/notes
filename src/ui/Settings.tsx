@@ -1013,7 +1013,7 @@ function AboutPage() {
     <>
       <div className="about">
         <img src="./icon.png" alt="" className="about-icon" />
-        <div className="about-name">Notes</div>
+        <div className="about-name">Delta Notes</div>
         <div className="set-sub">Version {VERSION}</div>
         <div className="set-links">
           <button className="link" onClick={() => openExternal(REPO_URL)}>

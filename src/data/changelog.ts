@@ -2,20 +2,26 @@
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
     version: '1.0.0',
-    date: '2026-11-21',
+    date: '2026-11-22',
     items: [
-      'Notes for Mac and Windows: folders, Smart Folders, tags, pinned notes and Recently Deleted',
-      'Title, Heading, Subheading, Body and Monostyled text; bulleted, dashed, numbered lists and checklists; block quotes; tables',
-      'Bold, italic, underline, strikethrough, highlights in five colours, text colours, fonts, sizes, alignment and indentation',
-      'Pictures, scans, sketches, audio recordings, PDFs, files and link previews in your notes',
+      'Delta Notes for Mac, Windows and Android (early version): folders as pinned tiles, Smart Folders, #tags, pinned notes and Recently Deleted',
+      'Folder icons: built-in icons, 3,000+ brand and app logos, or any emoji, with search',
+      'Title, Heading, Subheading, Body and Monostyled text; bulleted, dashed and numbered lists; checklists; block quotes; tables',
+      'Bold, italic, underline, strikethrough, superscript and subscript; highlights; text colours; fonts, sizes, alignment and indentation',
+      'Pictures, scanned documents, sketches, audio recordings, videos, PDFs, any file, and link previews',
       'Math Notes: type an expression and = for the answer, with variables',
       'Collapsible sections, Lines & Grids, links between notes (type >>), find & replace',
-      'Locked notes with one password (and Touch ID on Macs)',
-      'Gallery view and the Attachments Browser',
-      'Sync with Google across your devices',
-      'Import from Apple Notes, Samsung Notes, Notion, Evernote, Google Keep, Bear, Simplenote, Standard Notes, Obsidian, Word, PDF and Markdown',
-      'Export to PDF, Markdown, HTML and text; full backups',
-      'Twelve colour themes, each in light and dark',
+      'A title field on every note, and Generate title (Apple Intelligence on the Mac, or Claude with your own API key)',
+      'Floating Quick Note above every app (⌃⌘N, Ctrl+Alt+N on Windows)',
+      'Connected Services: Smart Folders filled from GitHub (issues and pull requests), Todoist, Linear, Jira and Google Tasks, with each task’s status and Clear Completed',
+      'Locked notes with one password, and Touch ID on Macs',
+      'List and Gallery views, sorting and date groups, search, the Attachments Browser',
+      'Sync with Google (your own Drive app folder); notes changed on two devices at once keep both versions',
+      'Import from Apple Notes, Samsung Notes, Notion, Evernote, Google Keep, Bear, Simplenote, Standard Notes, Obsidian/Markdown, Word, PDF, text and HTML',
+      'Export to PDF, Markdown, HTML and plain text; print; full backups',
+      'Fourteen themes in light and dark, including Nothing and Pixel looks with their own fonts and shapes',
+      'Keyboard shortcuts you can change (⌘T new note, ⌘S sidebar, ⌘W close note), Ctrl on Windows',
+      'Empty notes are deleted when you leave them',
       'In-app updates and feedback'
     ]
   }

@@ -38,5 +38,5 @@ const notes = (next > 0 ? rest.slice(0, next) : rest).split('\n').slice(1).join(
 const notesFile = path.join(os.tmpdir(), `notes-${version}-notes.md`)
 fs.writeFileSync(notesFile, notes)
 
-execFileSync('gh', ['release', 'create', `v${version}`, '--title', `Notes ${version}`, '--notes-file', notesFile, ...files], { cwd: root, stdio: 'inherit' })
+execFileSync('gh', ['release', 'create', `v${version}`, '--title', `Delta Notes ${version}`, '--notes-file', notesFile, ...files], { cwd: root, stdio: 'inherit' })
 console.log(`Published v${version}`)
