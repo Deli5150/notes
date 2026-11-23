@@ -16,11 +16,14 @@ export interface CanvasScene {
 interface OpenCanvas {
   /** The scene to start from (empty for a new canvas). */
   scene: CanvasScene | null
+  /** The tool to start with (the pencil when the S Pen comes out). */
+  tool?: string
   /** Saves the finished canvas into the note (null when a new one was left empty). */
   done: (attrs: Partial<AttachmentAttrs> | null) => void
 }
 
-export const useCanvas = create<{ open: OpenCanvas | null }>(() => ({ open: null }))
+/** finish: the open canvas's Done (Android's back button uses it too). */
+export const useCanvas = create<{ open: OpenCanvas | null; finish: (() => void) | null }>(() => ({ open: null, finish: null }))
 
 export async function loadScene(id: string | null): Promise<CanvasScene | null> {
   if (!id) return null
@@ -41,11 +44,12 @@ export async function saveCanvas(sceneJson: string, png: Uint8Array): Promise<Pa
 }
 
 /** Opens a canvas (an existing one, or a new one); resolves with what to save, or null. */
-export function openCanvas(scene: CanvasScene | null): Promise<Partial<AttachmentAttrs> | null> {
+export function openCanvas(scene: CanvasScene | null, tool?: string): Promise<Partial<AttachmentAttrs> | null> {
   return new Promise((resolve) => {
     useCanvas.setState({
       open: {
         scene,
+        tool,
         done: (attrs) => {
           useCanvas.setState({ open: null })
           resolve(attrs)

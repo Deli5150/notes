@@ -280,11 +280,11 @@ export async function insertGenerated(editor: TEditor, img: { bytes: Uint8Array;
 }
 
 /** A canvas (Excalidraw) where the cursor is: it opens over the note, and goes in on Done. */
-export async function addCanvas(): Promise<void> {
+export async function addCanvas(tool?: string): Promise<void> {
   const editor = ed()
   if (!editor) return
   const at = editor.state.selection.to
-  const attrs = await openCanvas(null)
+  const attrs = await openCanvas(null, tool)
   if (!attrs || editor.isDestroyed) return
   editor.chain().focus().insertContentAt(Math.min(at, editor.state.doc.content.size), { type: 'attachment', attrs }).run()
 }

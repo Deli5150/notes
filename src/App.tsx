@@ -10,10 +10,10 @@ import { applyImport, importFiles } from './import'
 import * as exporter from './lib/export'
 import * as lock from './lib/lock'
 import { dropIfBlank, flushSave, useStore } from './lib/store'
-import { onNewNoteRequest, paintBars, startInsets } from './lib/android'
-import { backToList, usePhone } from './lib/phone'
+import { onNewNoteRequest, onPen, paintBars, startInsets } from './lib/android'
+import { backToList, isPhone, usePhone } from './lib/phone'
 import { desktop, isAndroid, isMac } from './lib/storage'
-import { newNote, newQuickNote } from './ui/actions'
+import { addCanvas, newNote, newQuickNote } from './ui/actions'
 import { startSync, syncNow } from './lib/syncRunner'
 import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
@@ -143,6 +143,14 @@ export default function App() {
     void startFeeds()
     startInsets()
     // Android's Quick Settings tile / the icon's shortcut: straight to a new Quick Note.
+    // The S Pen comes out with a note open: straight to the canvas, like starting to draw on paper.
+    onPen((inserted) => {
+      const ui = useUi.getState()
+      const note = useStore.getState().notes.find((n) => n.id === ui.noteId)
+      if (inserted || !useStore.getState().settings.penCanvas || !note || note.deletedAt || note.locked || note.external) return
+      if (ui.settings || useCanvas.getState().open || (isPhone() && !ui.phoneNote)) return
+      void addCanvas('freedraw')
+    })
     onNewNoteRequest(() => {
       useUi.setState({ settings: null })
       newQuickNote()
@@ -152,6 +160,7 @@ export default function App() {
       ? CapApp.addListener('backButton', () => {
           const ui = useUi.getState()
           if (document.querySelector('.menu, .dialog')) dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+          else if (useCanvas.getState().open) useCanvas.getState().finish?.()
           else if (useUpdateSheet.getState().open) useUpdateSheet.setState({ open: false })
           else if (ui.settings) settingsBack()
           else if (ui.findOpen) useUi.setState({ findOpen: false })

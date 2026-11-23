@@ -9,6 +9,7 @@ interface NotesNative {
   insets(): Promise<Partial<Insets>>
   addListener(event: 'insets', fn: (e: Insets) => void): Promise<{ remove(): Promise<void> }>
   addListener(event: 'newNote', fn: () => void): Promise<{ remove(): Promise<void> }>
+  addListener(event: 'pen', fn: (e: { inserted: boolean }) => void): Promise<{ remove(): Promise<void> }>
   googleAuthorize(o: { interactive: boolean; scopes?: string[] }): Promise<{ accessToken: string }>
   downloadUpdate(o: { url: string; name: string; sha256?: string }): Promise<{ path: string }>
   installUpdate(o: { path: string }): Promise<{ needsPermission?: boolean; missing?: boolean }>
@@ -41,6 +42,11 @@ export function startInsets(): void {
 /** The Quick Settings tile or the app icon's "New note" shortcut asked for a new note. */
 export function onNewNoteRequest(fn: () => void): void {
   void native?.addListener('newNote', fn)
+}
+
+/** A Samsung S Pen taken out (inserted: false) or put back. */
+export function onPen(fn: (inserted: boolean) => void): void {
+  void native?.addListener('pen', (e) => fn(e.inserted))
 }
 
 /** The in-app updater's native half (src/lib/updater.ts). */

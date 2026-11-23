@@ -1,7 +1,10 @@
 package app.notes.android;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -122,8 +125,44 @@ public class NotesNativePlugin extends Plugin {
         checkNewNote(intent);
     }
 
+    // ── The S Pen ──────────────────────────────────────────────────────────────────────────
+    // Samsung phones and tablets with a built-in S Pen broadcast com.samsung.pen.INSERT when it's
+    // taken out or put back (penInsert false / true). The page hears "pen" ({ inserted }) and, if a
+    // note is open, opens the canvas. The first (sticky) broadcast is only the current state, so
+    // it's skipped. Other phones never send it.
+
+    private BroadcastReceiver pen;
+
+    private void listenForPen() {
+        pen = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (isInitialStickyBroadcast()) return;
+                JSObject ev = new JSObject();
+                ev.put("inserted", intent.getBooleanExtra("penInsert", true));
+                notifyListeners("pen", ev);
+            }
+        };
+        IntentFilter filter = new IntentFilter("com.samsung.pen.INSERT");
+        if (Build.VERSION.SDK_INT >= 33) getContext().registerReceiver(pen, filter, Context.RECEIVER_EXPORTED);
+        else getContext().registerReceiver(pen, filter);
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        if (pen != null) {
+            try {
+                getContext().unregisterReceiver(pen);
+            } catch (IllegalArgumentException ignored) {
+            }
+            pen = null;
+        }
+        super.handleOnDestroy();
+    }
+
     @Override
     public void load() {
+        listenForPen();
         checkNewNote(getActivity().getIntent());
         edgeToEdge();
         consent = getActivity().registerForActivityResult(new ActivityResultContracts.StartIntentSenderForResult(), (result) -> {

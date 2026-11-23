@@ -68,6 +68,7 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
     return () => {
       desktop?.setCanvasOpen(false)
       off?.()
+      useCanvas.setState({ finish: null })
     }
   }, [])
 
@@ -92,6 +93,8 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
       setSaving(false)
     }
   }
+
+  useCanvas.setState({ finish: () => void done() })
 
   const pick = (t: Tool) => {
     api.current?.setActiveTool({ type: t, locked })
@@ -154,6 +157,7 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
         <Excalidraw
           excalidrawAPI={(a) => {
             api.current = a
+            if (open.tool) setTimeout(() => pick(open.tool as Tool))
             // For tests (like window.__notes): the open canvas and Excalidraw's helpers.
             ;(window as unknown as { __canvas: unknown }).__canvas = { api: a, convertToExcalidrawElements, done }
           }}

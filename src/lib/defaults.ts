@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: Settings = {
   collapsedFolders: [],
   foldersCollapsed: false,
   titleEngine: 'auto',
+  penCanvas: true,
   imageModel: 'gemini-nano-banana-2.1',
   imageStyle: 'illustration'
 }

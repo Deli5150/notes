@@ -85,6 +85,10 @@ features and build commands.
 - Android "New note": QuickNoteTileService (Quick Settings tile) and res/xml/shortcuts.xml (icon
   long-press) open MainActivity with NEW_NOTE; NotesNativePlugin sends a retained "newNote" event
   (works from a cold start), App.tsx runs newQuickNote().
+- S Pen: NotesNativePlugin listens for Samsung's com.samsung.pen.INSERT (penInsert false = taken
+  out; the initial sticky one is skipped) and sends "pen"; with a note open and settings.penCanvas,
+  App.tsx opens a new canvas with the pencil. Test: `adb shell am broadcast -a
+  com.samsung.pen.INSERT --ez penInsert false`. Android's back button finishes an open canvas.
 - README screenshots live in docs/screenshots (desktop from the NOTES_SHOTS hook with
   `--force-device-scale-factor=2`; Android from `adb exec-out screencap`), made from sample notes,
   never the user's.

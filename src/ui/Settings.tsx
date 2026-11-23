@@ -149,6 +149,11 @@ function General() {
         <Row label="Tags" sub="Words starting with # become tags, listed in the sidebar.">
           <Toggle on={s.tags} onChange={(v) => set({ tags: v })} />
         </Row>
+        {isAndroid && (
+          <Row label="Open the canvas when the S Pen comes out" sub="On Samsung phones and tablets with a built-in S Pen: take it out with a note open to start drawing.">
+            <Toggle on={s.penCanvas !== false} onChange={(v) => set({ penCanvas: v })} />
+          </Row>
+        )}
         <Row label="Check spelling while typing">
           <Toggle
             on={s.spellcheck}
