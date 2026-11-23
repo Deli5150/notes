@@ -52,14 +52,18 @@ export interface ExternalItem {
   updatedAt: string
 }
 
-export type ServiceId = 'github'
+export type ServiceId = 'github' | 'todoist' | 'linear' | 'jira' | 'gtasks'
 
 /** A Smart Folder filled from a connected service (Settings → Connected Services). */
 export interface FeedSource {
   provider: ServiceId
-  /** GitHub: issues assigned to you, issues you opened, or a repository's issues. */
-  kind: 'assigned' | 'created' | 'repo'
-  /** "owner/name" for kind "repo". */
+  /** Which of the service's lists (services/*.ts `sources`): "assigned", "pr-created", "project"… */
+  kind: string
+  /** The repository, project, team, task list or JQL query the kind needs. */
+  target?: string
+  /** Its name, for showing. */
+  targetName?: string
+  /** "owner/name": GitHub folders from before `target`. */
   repo?: string
   /** Completed items cleared from the folder: they don't come back unless reopened. */
   dismissed?: string[]

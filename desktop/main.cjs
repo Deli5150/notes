@@ -820,8 +820,22 @@ ipcMain.handle('google:sign-in', () => google.signIn())
 ipcMain.handle('google:sign-out', () => google.signOut())
 ipcMain.handle('google:fetch', (_e, url, init) => google.authFetch(url, init))
 ipcMain.handle('google:fetch-bytes', (_e, url, init) => google.authFetchBytes(url, init))
+ipcMain.handle('gtasks:sign-in', () => google.tasks.signIn())
+ipcMain.handle('gtasks:sign-out', () => google.tasks.signOut())
+ipcMain.handle('gtasks:fetch', (_e, url, init) => google.tasks.authFetch(url, init))
 
 // ── Titles with Claude ───────────────────────────────────────────────────────────────────────
+
+// Requests to connected services (Settings → Connected Services) made from here, where the
+// services' CORS rules don't apply (Jira's API, for one, can't be called from a page). Only these
+// hosts, only https.
+const SERVICE_HOSTS = [/^api\.github\.com$/, /^api\.todoist\.com$/, /^api\.linear\.app$/, /^[a-z0-9-]+\.atlassian\.net$/]
+ipcMain.handle('net:service', async (_e, url, init = {}) => {
+  const u = new URL(String(url))
+  if (u.protocol !== 'https:' || !SERVICE_HOSTS.some((h) => h.test(u.hostname))) throw new Error('not a connected service')
+  const res = await net.fetch(u.toString(), { method: init.method ?? 'GET', headers: init.headers, body: init.body })
+  return { status: res.status, ok: res.ok, text: await res.text(), link: res.headers.get('link') ?? '' }
+})
 
 // Secrets the page keeps on this computer only (a connected service's token), encrypted with the
 // system keychain (safeStorage), one file each.

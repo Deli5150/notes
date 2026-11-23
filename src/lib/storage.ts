@@ -44,6 +44,7 @@ export interface DesktopBridge {
   linkPreview(url: string): Promise<LinkPreview | null>
   openExternal(url: string): void
   closeWindow(): void
+  serviceFetch(url: string, init?: FetchInit): Promise<{ status: number; ok: boolean; text: string; link: string }>
   secrets: {
     get(name: string): Promise<string | null>
     set(name: string, value: string | null): Promise<void>
@@ -91,6 +92,12 @@ export interface DesktopBridge {
     fetch(url: string, init?: FetchInit): Promise<{ status: number; ok: boolean; text: string }>
     /** Binary up/downloads for attachments (base64 in, base64 out). */
     fetchBytes(url: string, init?: { method?: string; headers?: Record<string, string>; body?: Uint8Array }): Promise<{ status: number; ok: boolean; data: Uint8Array | null; text: string }>
+    /** Google Tasks' own sign-in (read-only), apart from Sync's. */
+    tasks: {
+      signIn(): Promise<string | undefined>
+      signOut(): Promise<void>
+      fetch(url: string, init?: FetchInit): Promise<{ status: number; ok: boolean; text: string }>
+    }
   }
   updater: {
     status(): Promise<UpdateStatus>

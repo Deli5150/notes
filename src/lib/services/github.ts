@@ -1,59 +1,21 @@
 import { markdownToHtml, toNoteHtml } from '../../import/common'
 import type { FeedSource } from '../types'
+import { LOGOS } from './logos'
+import { check, json, serviceFetch } from './net'
+import { PAGES, type Credentials, type FeedItem, type Service } from './types'
 
-// GitHub, for Smart Folders (src/lib/feeds.ts): the account behind a token, its repositories, and
-// issues as notes. The token is a personal access token the person makes on github.com; it's kept
-// on this device only (storage.ts secrets).
+// GitHub: issues and pull requests as notes. A personal access token from github.com
+// (Settings → Developer settings), kept on this device only.
 
 const API = 'https://api.github.com'
-/** GitHub's logo (Simple Icons, CC0), for the folders it fills. */
-export const GITHUB_LOGO = 'M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'
-export const NEW_TOKEN_URL = 'https://github.com/settings/tokens/new?description=Notes&scopes=repo'
+export const GITHUB_LOGO = LOGOS.github.path
 
-export class GitHubError extends Error {}
-
-async function call<T>(token: string, path: string): Promise<{ data: T; next: boolean }> {
-  const res = await fetch(path.startsWith('http') ? path : `${API}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
+async function call<T>(cred: Credentials, path: string): Promise<{ data: T; next: boolean }> {
+  const res = await serviceFetch(path.startsWith('http') ? path : `${API}${path}`, {
+    headers: { Authorization: `Bearer ${cred.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
   })
-  if (res.status === 401) throw new GitHubError('GitHub didn’t accept the token. Connect again in Settings → Connected Services.')
-  if (res.status === 403 || res.status === 429) throw new GitHubError('GitHub is limiting requests right now. Notes will try again later.')
-  if (res.status === 404) throw new GitHubError('GitHub couldn’t find that (or the token can’t see it).')
-  if (!res.ok) throw new GitHubError(`GitHub answered ${res.status}.`)
-  return { data: (await res.json()) as T, next: /rel="next"/.test(res.headers.get('link') ?? '') }
-}
-
-export interface GitHubUser {
-  login: string
-  name?: string
-}
-
-export async function githubUser(token: string): Promise<GitHubUser> {
-  const { data } = await call<{ login: string; name?: string | null }>(token, '/user')
-  return { login: data.login, name: data.name ?? undefined }
-}
-
-/** The repositories the account can see, most recently pushed first (up to 300). */
-export async function githubRepos(token: string): Promise<string[]> {
-  const out: string[] = []
-  for (let page = 1; page <= 3; page++) {
-    const { data, next } = await call<Array<{ full_name: string }>>(token, `/user/repos?per_page=100&sort=pushed&page=${page}`)
-    out.push(...data.map((r) => r.full_name))
-    if (!next) break
-  }
-  return out
-}
-
-export interface FeedItem {
-  id: string
-  title: string
-  html: string
-  url: string
-  state: 'open' | 'done' | 'dropped'
-  ref: string
-  meta: string
-  createdAt: number
-  updatedAt: string
+  check('GitHub', res)
+  return { data: json<T>(res), next: /rel="next"/.test(res.link) }
 }
 
 interface Issue {
@@ -63,58 +25,101 @@ interface Issue {
   body?: string | null
   html_url: string
   state: 'open' | 'closed'
-  state_reason?: 'completed' | 'not_planned' | 'duplicate' | 'reopened' | null
+  state_reason?: string | null
   user?: { login: string } | null
   labels?: Array<{ name?: string } | string>
-  assignees?: Array<{ login: string }>
+  assignees?: Array<{ login: string }> | null
   created_at: string
   updated_at: string
-  pull_request?: unknown
+  /** Issues lists and search: there when it's a pull request. */
+  pull_request?: { merged_at?: string | null } | null
+  /** Pull request lists. */
+  merged_at?: string | null
+  draft?: boolean
   repository?: { full_name: string }
+  repository_url?: string
 }
 
-const PAGES = 5
-
-/**
- * A feed's issues (open and closed, newest activity first, up to 500). complete is false when
- * there were more than that, so notes for issues not seen aren't taken out.
- */
-export async function githubIssues(token: string, feed: FeedSource): Promise<{ items: FeedItem[]; complete: boolean }> {
-  const base =
-    feed.kind === 'repo'
-      ? `/repos/${feed.repo}/issues?state=all&sort=updated&per_page=100`
-      : `/issues?filter=${feed.kind}&state=all&sort=updated&per_page=100`
-  const issues: Issue[] = []
-  let complete = true
+/** Everything in a list, a page at a time; complete is false when there was more than PAGES pages. */
+async function all<T>(cred: Credentials, first: string, pick: (page: unknown) => T[]): Promise<{ rows: T[]; complete: boolean }> {
+  const rows: T[] = []
   for (let page = 1; ; page++) {
-    const { data, next } = await call<Issue[]>(token, `${base}&page=${page}`)
-    issues.push(...data)
-    if (!next) break
-    if (page === PAGES) {
-      complete = false
-      break
-    }
+    const { data, next } = await call<unknown>(cred, `${first}&page=${page}`)
+    rows.push(...pick(data))
+    if (!next) return { rows, complete: true }
+    if (page === PAGES) return { rows, complete: false }
   }
-  const items: FeedItem[] = []
-  for (const i of issues) {
-    if (i.pull_request) continue
-    const repo = i.repository?.full_name ?? feed.repo ?? ''
-    const ref = `${repo}#${i.number}`
-    const state = i.state === 'open' ? 'open' : i.state_reason === 'not_planned' || i.state_reason === 'duplicate' ? 'dropped' : 'done'
-    const labels = (i.labels ?? []).map((l) => (typeof l === 'string' ? l : l.name)).filter(Boolean) as string[]
-    const meta = [i.user ? `opened by @${i.user.login}` : '', i.assignees?.length ? `assigned to ${i.assignees.map((a) => '@' + a.login).join(', ')}` : '', labels.join(', ')].filter(Boolean).join(' · ')
-    const body = i.body?.trim() ? markdownToHtml(i.body) : '<p><em>No description.</em></p>'
-    items.push({
-      id: String(i.id),
-      title: i.title,
-      html: await toNoteHtml(body),
-      meta,
-      url: i.html_url,
-      state,
-      ref,
-      createdAt: Date.parse(i.created_at),
-      updatedAt: i.updated_at
-    })
+}
+
+async function toItem(i: Issue, repoHint: string | undefined, pull: boolean): Promise<FeedItem> {
+  const repo = i.repository?.full_name ?? i.repository_url?.split('/repos/')[1] ?? repoHint ?? ''
+  const merged = i.merged_at ?? i.pull_request?.merged_at
+  const state = i.state === 'open' ? 'open' : pull ? (merged ? 'done' : 'dropped') : i.state_reason === 'not_planned' || i.state_reason === 'duplicate' ? 'dropped' : 'done'
+  const labels = (i.labels ?? []).map((l) => (typeof l === 'string' ? l : l.name)).filter(Boolean) as string[]
+  const meta = [
+    pull && i.draft ? 'draft' : '',
+    pull && merged ? 'merged' : '',
+    i.user ? `opened by @${i.user.login}` : '',
+    i.assignees?.length ? `assigned to ${i.assignees.map((a) => '@' + a.login).join(', ')}` : '',
+    labels.join(', ')
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return {
+    id: String(i.id),
+    title: i.title,
+    html: await toNoteHtml(i.body?.trim() ? markdownToHtml(i.body) : '<p><em>No description.</em></p>'),
+    url: i.html_url,
+    state,
+    ref: `${repo}#${i.number}`,
+    meta,
+    createdAt: Date.parse(i.created_at),
+    updatedAt: i.updated_at
   }
-  return { items, complete }
+}
+
+const repos = async (cred: Credentials): Promise<Array<[string, string]>> => {
+  const { rows } = await all<{ full_name: string }>(cred, '/user/repos?per_page=100&sort=pushed', (d) => d as Array<{ full_name: string }>)
+  return rows.map((r) => [r.full_name, r.full_name])
+}
+
+const target = (feed: FeedSource) => feed.target ?? feed.repo ?? ''
+
+export const github: Service = {
+  id: 'github',
+  name: 'GitHub',
+  logo: LOGOS.github.path,
+  color: LOGOS.github.hex,
+  openLabel: 'Open on GitHub',
+  connect: {
+    fields: [{ key: 'token', label: 'Personal access token', placeholder: 'ghp_… or github_pat_…', secret: true }],
+    help: 'Make a token on GitHub (the “repo” scope lets Notes see private repositories).',
+    helpUrl: 'https://github.com/settings/tokens/new?description=Notes&scopes=repo',
+    helpLabel: 'Create a token on GitHub'
+  },
+  async account(cred) {
+    const { data } = await call<{ login: string; name?: string | null }>(cred, '/user')
+    return { login: `@${data.login}`, name: data.name ?? undefined }
+  },
+  sources: [
+    { kind: 'assigned', label: 'Issues assigned to you', folderName: 'My Issues' },
+    { kind: 'created', label: 'Issues you opened', folderName: 'Issues I Opened' },
+    { kind: 'repo', label: 'All issues in a repository', folderName: 'Issues', target: { label: 'Repository', placeholder: 'owner/name', options: repos } },
+    { kind: 'pr-created', label: 'Pull requests you opened', folderName: 'My Pull Requests' },
+    { kind: 'pr-review', label: 'Pull requests waiting for your review', folderName: 'Reviews' },
+    { kind: 'pr-repo', label: 'All pull requests in a repository', folderName: 'Pull Requests', target: { label: 'Repository', placeholder: 'owner/name', options: repos } }
+  ],
+  async items(cred, feed) {
+    const repo = target(feed)
+    let list: { rows: Issue[]; complete: boolean }
+    const pulls = feed.kind.startsWith('pr-')
+    if (feed.kind === 'repo') list = await all<Issue>(cred, `/repos/${repo}/issues?state=all&sort=updated&per_page=100`, (d) => d as Issue[])
+    else if (feed.kind === 'pr-repo') list = await all<Issue>(cred, `/repos/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=100`, (d) => d as Issue[])
+    else if (pulls) {
+      const q = feed.kind === 'pr-review' ? 'is:pr is:open review-requested:@me' : 'is:pr author:@me'
+      list = await all<Issue>(cred, `/search/issues?q=${encodeURIComponent(q)}&sort=updated&per_page=100`, (d) => (d as { items: Issue[] }).items)
+    } else list = await all<Issue>(cred, `/issues?filter=${feed.kind}&state=all&sort=updated&per_page=100`, (d) => d as Issue[])
+    const rows = pulls ? list.rows : list.rows.filter((i) => !i.pull_request)
+    return { items: await Promise.all(rows.map((i) => toItem(i, repo || undefined, pulls))), complete: list.complete }
+  }
 }

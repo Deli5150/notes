@@ -10,15 +10,16 @@ import { changePassword, lockNow, resetPassword, useLock } from '../lib/lock'
 import { RELEASES_PAGE, REPO_URL } from '../lib/release'
 import { desktop, isAndroid, isMac, openExternal, secrets } from '../lib/storage'
 import { listDate } from '../lib/dates'
-import { connectGitHub, createFeedFolder, disconnectGitHub, githubSourceLabel, refreshFeed, useServices } from '../lib/feeds'
-import { githubRepos, NEW_TOKEN_URL } from '../lib/services/github'
+import { connectService, createFeedFolder, disconnectService, feedLabel, refreshFeed, targetOptions, useServices } from '../lib/feeds'
+import { SERVICES, serviceById } from '../lib/services'
+import type { Service } from '../lib/services/types'
 import { useStore } from '../lib/store'
 import { syncNow, turnOffSync, turnOnSync, useSyncState } from '../lib/syncRunner'
 import { THEMES } from '../lib/themes'
 import { useUi, type SettingsPage } from '../lib/ui'
 import { assignable, formatKeys, useKeys, useShortcuts } from '../lib/shortcuts'
 import { checkForUpdates, downloadUpdate, installUpdate, useUpdate } from '../lib/updater'
-import type { AppData, FeedSource, MathResults, Paper, Settings as SettingsT, SortBy, StartWith, TitleEngine } from '../lib/types'
+import type { AppData, FeedSource, ServiceId, MathResults, Paper, Settings as SettingsT, SortBy, StartWith, TitleEngine } from '../lib/types'
 import { VERSION } from '../version'
 import { applyImport, importAppleNotes, importFiles } from '../import'
 import { ALT, MOD, PAPERS, setupPassword, SHIFT } from './actions'
@@ -44,7 +45,7 @@ const PAGES: Array<{ id: SettingsPage; label: string; icon: React.ReactNode }> =
 
 const set = (patch: Partial<SettingsT>) => useStore.getState().setSettings(patch)
 
-function Row({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
+function Row({ label, sub, children }: { label: React.ReactNode; sub?: string; children: React.ReactNode }) {
   return (
     <div className="set-row">
       <div className="set-label">
@@ -753,24 +754,95 @@ function UpdatesPage() {
   )
 }
 
-function ServicesPage() {
-  const gh = useServices()
-  const feeds = useStore(useShallow((s) => s.folders.filter((f) => f.feed)))
-  const [token, setToken] = useState('')
+/** A service's logo on its brand colour, like an app icon. */
+function ServiceLogo({ service, size = 26 }: { service: Service; size?: number }) {
+  return (
+    <span className="svc-logo" style={{ width: size, height: size, background: service.color }}>
+      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+        <path d={service.logo} />
+      </svg>
+    </span>
+  )
+}
+
+function ServiceRow({ service }: { service: Service }) {
+  const account = useServices((s) => s.accounts[service.id])
+  const saved = useServices((s) => s.errors[service.id])
+  const checking = useServices((s) => s.checking)
+  const [open, setOpen] = useState(false)
+  const [values, setValues] = useState<Record<string, string>>({})
   const [working, setWorking] = useState(false)
   const [error, setError] = useState('')
   const connect = async () => {
     setWorking(true)
     setError('')
     try {
-      await connectGitHub(token)
-      setToken('')
+      await connectService(service.id, values)
+      setValues({})
+      setOpen(false)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setWorking(false)
     }
   }
+  const form = service.connect !== 'google' ? service.connect : null
+  const ready = form ? form.fields.every((f) => values[f.key]?.trim()) : true
+  return (
+    <>
+      <Row
+        label={
+          <span className="svc-name">
+            <ServiceLogo service={service} />
+            {service.name}
+          </span>
+        }
+        sub={account ? `Connected as ${account.login}` : checking ? 'Checking…' : error || saved || 'Not connected'}
+      >
+        {account ? (
+          <button className="btn" onClick={() => void disconnectService(service.id)}>
+            Disconnect
+          </button>
+        ) : form ? (
+          <button className={`btn${open ? '' : ' btn-primary'}`} onClick={() => setOpen(!open)}>
+            {open ? 'Cancel' : 'Connect'}
+          </button>
+        ) : (
+          <button className="btn btn-primary" disabled={working} onClick={() => void connect()}>
+            {working ? 'Waiting for Google…' : 'Sign in with Google'}
+          </button>
+        )}
+      </Row>
+      {open && form && !account && (
+        <div className="svc-form">
+          {form.fields.map((f) => (
+            <label key={f.key} className="svc-field">
+              <span>{f.label}</span>
+              <input className="field" type={f.secret ? 'password' : 'text'} placeholder={f.placeholder} value={values[f.key] ?? ''} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+            </label>
+          ))}
+          <div className="svc-form-foot">
+            <span className="set-sub">
+              {form.help}{' '}
+              <button className="link-btn" onClick={() => openExternal(form.helpUrl)}>
+                {form.helpLabel}
+              </button>
+            </span>
+            <button className="btn btn-primary" disabled={!ready || working} onClick={() => void connect()}>
+              {working ? 'Checking…' : 'Connect'}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function ServicesPage() {
+  const accounts = useServices((s) => s.accounts)
+  const busy = useServices((s) => s.busy)
+  const feeds = useStore(useShallow((s) => s.folders.filter((f) => f.feed)))
+  const connected = SERVICES.filter((s) => accounts[s.id])
   return (
     <>
       <div className="set-hero">
@@ -780,44 +852,27 @@ function ServicesPage() {
           <div className="set-sub">Smart Folders that fill themselves from other apps. Each item becomes a note you can read and search, with its status when it’s a task, and the folder keeps up as things change there.</div>
         </div>
       </div>
-      <Group
-        title="GitHub"
-        footer={
-          <>
-            Notes uses a personal access token from your GitHub account. It stays on this device (encrypted where the system allows) and is never synced: connect each computer or phone you want refreshing. The folders and their notes sync as usual.{' '}
-            <button className="link-btn" onClick={() => openExternal(NEW_TOKEN_URL)}>
-              Create a token on GitHub
-            </button>{' '}
-            (the “repo” scope lets Notes see private repositories’ issues).
-          </>
-        }
-      >
-        {gh.checking ? (
-          <Row label="Checking your GitHub connection…">
-            <RefreshCw size={15} className="spin" />
-          </Row>
-        ) : gh.github ? (
-          <Row label={`Connected as @${gh.github.login}`} sub={gh.github.name}>
-            <button className="btn" onClick={() => void disconnectGitHub()}>
-              Disconnect
-            </button>
-          </Row>
-        ) : (
-          <Row label="Personal access token" sub={error || gh.error || 'Paste a token to connect your GitHub account.'}>
-            <input className="field is-key" type="password" placeholder="ghp_… or github_pat_…" value={token} onChange={(e) => setToken(e.target.value)} />
-            <button className="btn btn-primary" disabled={!token.trim() || working} onClick={() => void connect()}>
-              {working ? 'Checking…' : 'Connect'}
-            </button>
-          </Row>
-        )}
+      <Group title="Services" footer="Sign-ins stay on this device (encrypted where the system allows) and are never synced: connect each computer or phone you want refreshing. The folders and their notes sync as usual. Notes only reads from these services.">
+        {SERVICES.map((s) => (
+          <ServiceRow key={s.id} service={s} />
+        ))}
       </Group>
-      {gh.github && <NewFeedFolder />}
+      {connected.length > 0 && <NewFeedFolder services={connected} />}
       {feeds.length > 0 && (
-        <Group title="Smart Folders from GitHub">
+        <Group title="Your connected Smart Folders">
           {feeds.map((f) => (
-            <Row key={f.id} label={f.name} sub={f.feed!.error ?? `${githubSourceLabel(f.feed!)} · ${f.feed!.lastSync ? `refreshed ${listDate(f.feed!.lastSync).toLowerCase()}` : 'not refreshed yet'}`}>
-              <button className="btn" disabled={!gh.github || gh.busy.includes(f.id)} onClick={() => void refreshFeed(f.id)}>
-                {gh.busy.includes(f.id) ? 'Refreshing…' : 'Refresh'}
+            <Row
+              key={f.id}
+              label={
+                <span className="svc-name">
+                  <ServiceLogo service={serviceById(f.feed!.provider)} size={20} />
+                  {f.name}
+                </span>
+              }
+              sub={f.feed!.error ?? `${feedLabel(f.feed!)} · ${f.feed!.lastSync ? `refreshed ${listDate(f.feed!.lastSync).toLowerCase()}` : 'not refreshed yet'}`}
+            >
+              <button className="btn" disabled={!accounts[f.feed!.provider] || busy.includes(f.id)} onClick={() => void refreshFeed(f.id)}>
+                {busy.includes(f.id) ? 'Refreshing…' : 'Refresh'}
               </button>
               <button
                 className="btn"
@@ -836,45 +891,56 @@ function ServicesPage() {
   )
 }
 
-/** Make a Smart Folder from GitHub: which issues, and (for one repository) which. */
-function NewFeedFolder() {
-  const [kind, setKind] = useState<FeedSource['kind']>('assigned')
-  const [repos, setRepos] = useState<string[] | null>(null)
-  const [repo, setRepo] = useState('')
+/** Make a Smart Folder from a connected service: which service, which of its lists, which target. */
+function NewFeedFolder({ services }: { services: Service[] }) {
+  const [serviceId, setServiceId] = useState<ServiceId>(services[0].id)
+  const service = services.find((s) => s.id === serviceId) ?? services[0]
+  const [kind, setKind] = useState(service.sources[0].kind)
+  const source = service.sources.find((k) => k.kind === kind) ?? service.sources[0]
+  const [options, setOptions] = useState<Array<[string, string]> | null>(null)
+  const [target, setTarget] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   useEffect(() => {
-    if (kind !== 'repo' || repos) return
-    void secrets
-      .get('github-token')
-      .then((t) => (t ? githubRepos(t) : []))
-      .then((r) => {
-        setRepos(r)
-        if (!repo && r[0]) setRepo(r[0])
+    setOptions(null)
+    setTarget('')
+    setError('')
+    if (!source.target || source.target.free) return
+    let live = true
+    targetOptions(service.id, source.kind)
+      .then((o) => {
+        if (!live) return
+        setOptions(o)
+        if (o[0]) setTarget(o[0][0])
       })
-      .catch((e) => setError((e as Error).message))
-  }, [kind, repos, repo])
-  const feed: FeedSource = kind === 'repo' ? { provider: 'github', kind, repo } : { provider: 'github', kind }
-  const fallback = kind === 'repo' ? (repo.split('/')[1] ?? 'Issues') : kind === 'assigned' ? 'My Issues' : 'Issues I Opened'
+      .catch((e) => live && setError((e as Error).message))
+    return () => {
+      live = false
+    }
+  }, [service.id, source.kind, source.target])
+  const targetName = options?.find(([id]) => id === target)?.[1]
+  const fallback = source.target && !source.target.free ? (targetName?.replace(/ \([^)]*\)$/, '').split('/').pop() ?? source.folderName) : source.folderName
   return (
-    <Group title="New Smart Folder from GitHub">
-      <Row label="Fill it with">
-        <Select<FeedSource['kind']>
-          value={kind}
-          options={[
-            ['assigned', 'Issues assigned to you'],
-            ['created', 'Issues you opened'],
-            ['repo', 'All issues in a repository']
-          ]}
-          onChange={setKind}
+    <Group title="New connected Smart Folder">
+      <Row label="From">
+        <Select<ServiceId>
+          value={service.id}
+          options={services.map((s) => [s.id, s.name] as [ServiceId, string])}
+          onChange={(v) => {
+            setServiceId(v)
+            setKind(services.find((s) => s.id === v)!.sources[0].kind)
+          }}
         />
       </Row>
-      {kind === 'repo' && (
-        <Row label="Repository" sub={error || (repos ? undefined : 'Loading your repositories…')}>
-          {repos?.length ? (
-            <Select<string> value={repo} options={repos.map((r) => [r, r] as [string, string])} onChange={setRepo} />
+      <Row label="Fill it with">
+        <Select<string> value={source.kind} options={service.sources.map((k) => [k.kind, k.label] as [string, string])} onChange={setKind} />
+      </Row>
+      {source.target && (
+        <Row label={source.target.label} sub={error || (!source.target.free && !options ? 'Loading…' : undefined)}>
+          {options?.length ? (
+            <Select<string> value={target} options={options} onChange={setTarget} />
           ) : (
-            <input className="field" placeholder="owner/name" value={repo} onChange={(e) => setRepo(e.target.value.trim())} />
+            <input className="field" placeholder={source.target.placeholder} value={target} onChange={(e) => setTarget(e.target.value)} />
           )}
         </Row>
       )}
@@ -884,8 +950,9 @@ function NewFeedFolder() {
       <Row label="">
         <button
           className="btn btn-primary"
-          disabled={kind === 'repo' && !/^[\w.-]+\/[\w.-]+$/.test(repo)}
+          disabled={Boolean(source.target) && !target.trim()}
           onClick={() => {
+            const feed: FeedSource = { provider: service.id, kind: source.kind, ...(source.target ? { target: target.trim(), targetName: targetName ?? target.trim() } : {}) }
             const f = createFeedFolder(name.trim() || fallback, feed)
             setName('')
             useUi.getState().select({ kind: 'folder', id: f.id })

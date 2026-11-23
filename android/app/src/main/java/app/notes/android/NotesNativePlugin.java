@@ -41,9 +41,18 @@ public class NotesNativePlugin extends Plugin {
     // Cloud project), so there's no client secret here. Asked again whenever the token runs out:
     // without a prompt once the person has said yes.
 
-    private static final AuthorizationRequest GOOGLE = AuthorizationRequest.builder()
-        .setRequestedScopes(Arrays.asList(new Scope("https://www.googleapis.com/auth/drive.appdata"), new Scope("email")))
-        .build();
+    private static AuthorizationRequest request(PluginCall call) {
+        java.util.List<Scope> scopes = new java.util.ArrayList<>();
+        try {
+            com.getcapacitor.JSArray asked = call.getArray("scopes");
+            if (asked != null) for (int i = 0; i < asked.length(); i++) scopes.add(new Scope(asked.getString(i)));
+        } catch (org.json.JSONException ignored) {
+        }
+        // Sync's by default: Notes' own Drive folder.
+        if (scopes.isEmpty()) scopes.add(new Scope("https://www.googleapis.com/auth/drive.appdata"));
+        scopes.add(new Scope("email"));
+        return AuthorizationRequest.builder().setRequestedScopes(scopes).build();
+    }
 
     private ActivityResultLauncher<IntentSenderRequest> consent;
     private PluginCall waiting;
@@ -77,12 +86,13 @@ public class NotesNativePlugin extends Plugin {
         call.resolve(out);
     }
 
-    /** interactive: may show Google's account and consent screens; else only a token without asking. */
+    /** interactive: may show Google's account and consent screens; else only a token without asking.
+     *  scopes: what to ask for (Sync's Drive folder by default; Google Tasks asks for its own). */
     @PluginMethod
     public void googleAuthorize(PluginCall call) {
         boolean interactive = Boolean.TRUE.equals(call.getBoolean("interactive", false));
         Identity.getAuthorizationClient(getActivity())
-            .authorize(GOOGLE)
+            .authorize(request(call))
             .addOnSuccessListener((r) -> {
                 if (!r.hasResolution()) {
                     resolveToken(call, r);

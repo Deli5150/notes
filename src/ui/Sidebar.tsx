@@ -1,4 +1,5 @@
 import { clearCompleted, refreshFeed, useServices } from '../lib/feeds'
+import { serviceById } from '../lib/services'
 import { ArrowUpDown, ChevronDown, CircleCheck, RefreshCw, Cloud, CloudOff, FolderCog, Hash, Layers, MessageSquareText, PanelLeftClose, Plus, Search, Settings, SquarePen, Trash2, X, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -248,7 +249,8 @@ function SubFolders() {
 /** A connected Smart Folder: refresh it now, and clear its completed tasks. */
 function FeedButtons({ folder }: { folder: Folder }) {
   const busy = useServices((s) => s.busy.includes(folder.id))
-  const connected = useServices((s) => Boolean(s.github))
+  const service = serviceById(folder.feed!.provider)
+  const connected = useServices((s) => Boolean(s.accounts[service.id]))
   const done = useStore((s) => s.notes.filter((n) => n.folderId === folder.id && !n.deletedAt && n.external?.state && n.external.state !== 'open').length)
   return (
     <>
@@ -265,7 +267,7 @@ function FeedButtons({ folder }: { folder: Folder }) {
           <CircleCheck size={13} /> Clear {done}
         </button>
       )}
-      <button className="tb-btn" title={folder.feed?.error ?? (connected ? 'Refresh from GitHub' : 'Connect GitHub in Settings to refresh')} disabled={busy || !connected} onClick={() => void refreshFeed(folder.id)}>
+      <button className="tb-btn" title={folder.feed?.error ?? (connected ? `Refresh from ${service.name}` : `Connect ${service.name} in Settings to refresh`)} disabled={busy || !connected} onClick={() => void refreshFeed(folder.id)}>
         <RefreshCw size={14} className={busy ? 'spin' : undefined} />
       </button>
     </>

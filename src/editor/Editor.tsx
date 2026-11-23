@@ -10,6 +10,7 @@ import { lockedWithOldPassword, openLocked, openWithOldPassword, saveLocked, unl
 import { desktop, openExternal } from '../lib/storage'
 import { useKeys } from '../lib/shortcuts'
 import { TASK_LABEL, TaskState } from '../ui/TaskState'
+import { serviceById } from '../lib/services'
 import { noteById, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, type Note } from '../lib/types'
@@ -496,12 +497,13 @@ function ExternalBar({ note }: { note: Note }) {
         </span>
       )}
       <span className="external-ref">
-        <strong>{x.ref ?? 'GitHub'}</strong>
-        {x.meta && ` · ${x.meta}`}
+        {x.ref && <strong>{x.ref}</strong>}
+        {x.ref && x.meta ? ' · ' : ''}
+        {x.meta}
       </span>
       <span className="tb-flex" />
       <button className="external-open" onClick={() => openExternal(x.url)}>
-        Open on GitHub <ExternalLink size={12} />
+        {serviceById(x.provider).openLabel} <ExternalLink size={12} />
       </button>
     </div>
   )

@@ -12,7 +12,7 @@ The first release of Notes, for Mac and Windows.
 - Collapsible sections, Lines & Grids, links between notes (type >>), find & replace
 - Locked notes with one password, and Touch ID on Macs
 - List and Gallery views, sorting and date groups, search, the Attachments Browser
-- Connected Services: Smart Folders filled from GitHub (issues assigned to you, issues you opened, or a repository’s issues), one read-only note per issue with its open/completed/closed status, and Clear Completed at the top of the list
+- Connected Services: Smart Folders filled from GitHub (issues and pull requests), Todoist, Linear, Jira and Google Tasks, one read-only note per item with its open/completed/closed status, and Clear Completed at the top of the list
 - Folder icons can be any of 3,000+ brand and app logos, with search (Simple Icons)
 - Android app (early version): the same Notes on your phone, with a phone layout (the list, then the note full screen) and the back button, Sync with Google, and in-app updates (downloads the new APK and opens the installer)
 - Nothing theme: notes in the sidebar sit on solid cards, so they’re easy to read over the dot grid

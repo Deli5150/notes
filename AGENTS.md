@@ -76,12 +76,17 @@ features and build commands.
   `--force-device-scale-factor=2`; Android from `adb exec-out screencap`), made from sample notes,
   never the user's.
 - Connected Services (2026-11-22): Smart Folders with `folder.feed` filled by src/lib/feeds.ts from
-  src/lib/services/github.ts (personal access token in `secrets`, per device, never synced). Each
+  src/lib/services/*.ts (GitHub issues + PRs, Todoist API v1, Linear GraphQL, Jira Cloud
+  /rest/api/3/search/jql, Google Tasks; each a `Service` in services/types.ts). Sign-ins in
+  `secrets` as `<id>-token` (JSON; per device, never synced); Google Tasks has its own Google
+  sign-in (google.cjs `tasks`, Android `androidTasks`) apart from Sync's. Requests go through
+  `serviceFetch` (desktop main `net:service` for those hosts only, Android CapacitorHttp) because
+  of CORS. Each
   item is a read-only note with `note.external` (state open/done/dropped → TaskState icons) and id
   `ext-<folderId>-<itemId>` so devices agree. Refresh on start, every 10 min, on focus, on opening
   the folder. Clear Completed moves done/dropped to Recently Deleted and lists them in
-  `feed.dismissed` (they return only if reopened). Test with faked GitHub replies (override
-  window.fetch for api.github.com), never the user's token.
+  `feed.dismissed` (they return only if reopened). Test with `window.__fakeService` (made-up
+  replies, see services/net.ts), never the user's tokens.
 - Commands: the native menu (main.cjs `buildMenu`) sends names to `src/ui/commands.ts`; in a
   plain browser App.tsx maps shortcuts to the same names.
 - Importers (`src/import/`): each app's export format → HTML run through the editor's schema

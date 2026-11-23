@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('notesApp', {
   appleNotes: () => ipcRenderer.invoke('apple-notes'),
   linkPreview: (url) => ipcRenderer.invoke('link-preview', url),
   closeWindow: () => ipcRenderer.send('close-window'),
+  serviceFetch: (url, init) => ipcRenderer.invoke('net:service', url, init),
   secrets: {
     get: (name) => ipcRenderer.invoke('secret:get', name),
     set: (name, value) => ipcRenderer.invoke('secret:set', name, value)
@@ -84,7 +85,12 @@ contextBridge.exposeInMainWorld('notesApp', {
     signIn: () => ipcRenderer.invoke('google:sign-in'),
     signOut: () => ipcRenderer.invoke('google:sign-out'),
     fetch: (url, init) => ipcRenderer.invoke('google:fetch', url, init),
-    fetchBytes: (url, init) => ipcRenderer.invoke('google:fetch-bytes', url, init)
+    fetchBytes: (url, init) => ipcRenderer.invoke('google:fetch-bytes', url, init),
+    tasks: {
+      signIn: () => ipcRenderer.invoke('gtasks:sign-in'),
+      signOut: () => ipcRenderer.invoke('gtasks:sign-out'),
+      fetch: (url, init) => ipcRenderer.invoke('gtasks:fetch', url, init)
+    }
   },
   updater: {
     status: () => ipcRenderer.invoke('update:status'),

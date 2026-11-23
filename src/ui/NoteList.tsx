@@ -109,7 +109,7 @@ const NoteRow = memo(function NoteRow({
 }) {
   const thumb = useThumb(note.locked ? undefined : note.thumb)
   const title = note.title || 'New Note'
-  const snippet = note.locked ? 'Locked' : excerpt ?? (snippetOf(note.text, note.title) || (note.attachments.length ? '' : 'No additional text'))
+  const snippet = note.locked ? 'Locked' : excerpt ?? (snippetOf(note.text, note.title) || note.external?.meta || (note.attachments.length ? '' : 'No additional text'))
   return (
     <div
       className={`note-row${selected ? (focused ? ' is-selected' : ' is-selected-dim') : ''}`}
