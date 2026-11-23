@@ -821,6 +821,24 @@ select {
   color: var(--text);
 }
 
+.brand-search {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.brand-grid {
+  max-height: 168px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+
+.brand-empty {
+  grid-column: 1 / -1;
+  padding: 10px 2px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
 .icon-cell.is-on {
   background: var(--accent);
   color: var(--on-accent);

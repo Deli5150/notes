@@ -76,6 +76,8 @@ export interface Folder {
   smart?: SmartFilter
   /** Its pinned tile's icon: a Lucide icon name ("lucide:Book") or an emoji. */
   icon?: string
+  /** A brand logo's SVG path (24×24) when icon is "brand:<slug>" (src/lib/brands.ts). */
+  logo?: string
   /** Its tile's colour (a hex colour), else the theme's accent. */
   color?: string
   /** The folder's own sort (else the app's). */

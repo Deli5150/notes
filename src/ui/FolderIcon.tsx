@@ -40,7 +40,8 @@ import {
   Zap,
   type LucideIcon
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { loadBrands, searchBrands, usableColour, type Brand } from '../lib/brands'
 import { useStore } from '../lib/store'
 import type { Folder as FolderT } from '../lib/types'
 import { openDialog } from './overlays'
@@ -92,9 +93,17 @@ export const FOLDER_ICONS: Record<string, LucideIcon> = {
 
 export const FOLDER_COLORS = ['#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#0ea5e9', '#3b82f6', '#64748b']
 
-export function FolderGlyph({ folder, size = 18 }: { folder: Pick<FolderT, 'icon' | 'color' | 'id'>; size?: number }) {
+export function FolderGlyph({ folder, size = 18 }: { folder: Pick<FolderT, 'icon' | 'color' | 'id' | 'logo'>; size?: number }) {
   const icon = folder.icon ?? (folder.id === 'quick' ? 'lucide:Zap' : 'lucide:Folder')
   const color = folder.color ?? 'var(--accent)'
+  if (icon.startsWith('brand:') && folder.logo) {
+    // A brand's logo: its own colour, or the text colour for near-black and near-white ones.
+    return (
+      <svg width={size * 0.92} height={size * 0.92} viewBox="0 0 24 24" fill={folder.color ?? 'currentColor'} role="img" aria-label={icon.slice(6)}>
+        <path d={folder.logo} />
+      </svg>
+    )
+  }
   if (icon.startsWith('lucide:')) {
     const Icon = FOLDER_ICONS[icon.slice(7)] ?? Folder
     return <Icon size={size} color={color} strokeWidth={2} />
@@ -106,13 +115,49 @@ export function FolderGlyph({ folder, size = 18 }: { folder: Pick<FolderT, 'icon
   )
 }
 
+/** Search the brand logos (loaded on first use) and pick one. */
+function BrandSearch({ selected, onPick }: { selected: string | null; onPick: (b: Brand) => void }) {
+  const [query, setQuery] = useState('')
+  const [list, setList] = useState<Brand[] | null>(null)
+  const [open, setOpen] = useState(Boolean(selected))
+  useEffect(() => {
+    if (open && !list) void loadBrands().then(setList)
+  }, [open, list])
+  const results = list ? searchBrands(list, query) : []
+  return (
+    <>
+      <div className="icon-picker-label">Or a brand’s logo</div>
+      <input className="field brand-search" placeholder="Search 3,000+ brands and apps" value={query} onFocus={() => setOpen(true)} onChange={(e) => (setQuery(e.target.value), setOpen(true))} />
+      {open && (
+        <div className="icon-grid brand-grid">
+          {!list ? (
+            <span className="brand-empty">Loading logos…</span>
+          ) : results.length ? (
+            results.map((b) => (
+              <button type="button" key={b.slug} className={`icon-cell${selected === b.slug ? ' is-on' : ''}`} style={selected === b.slug ? undefined : { color: usableColour(b.hex) }} title={b.title} onClick={() => onPick(b)}>
+                <svg width={17} height={17} viewBox="0 0 24 24" fill="currentColor" aria-label={b.title}>
+                  <path d={b.path} />
+                </svg>
+              </button>
+            ))
+          ) : (
+            <span className="brand-empty">No brand called “{query}”</span>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
 function Picker({ folder, close }: { folder: FolderT; close: () => void }) {
   const [icon, setIcon] = useState(folder.icon ?? 'lucide:Folder')
   const [color, setColor] = useState(folder.color)
   const [name, setName] = useState(folder.name)
-  const [emoji, setEmoji] = useState(icon.startsWith('lucide:') ? '' : icon)
+  const [emoji, setEmoji] = useState(icon.startsWith('lucide:') || icon.startsWith('brand:') ? '' : icon)
+  const [logo, setLogo] = useState(folder.logo)
   const save = () => {
-    useStore.getState().updateFolder(folder.id, { icon, color, name: name.trim() || folder.name })
+    const isBrand = icon.startsWith('brand:')
+    useStore.getState().updateFolder(folder.id, { icon, color, logo: isBrand ? logo : undefined, name: name.trim() || folder.name })
     close()
   }
   return (
@@ -125,7 +170,7 @@ function Picker({ folder, close }: { folder: FolderT; close: () => void }) {
     >
       <div className="icon-picker-head">
         <div className="tile is-preview" style={{ '--tile': color ?? 'var(--accent)' } as React.CSSProperties}>
-          <FolderGlyph folder={{ id: folder.id, icon, color }} size={22} />
+          <FolderGlyph folder={{ id: folder.id, icon, color, logo }} size={22} />
         </div>
         <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Folder name" autoFocus />
       </div>
@@ -137,6 +182,15 @@ function Picker({ folder, close }: { folder: FolderT; close: () => void }) {
           </button>
         ))}
       </div>
+      <BrandSearch
+        selected={icon.startsWith('brand:') ? icon.slice(6) : null}
+        onPick={(b) => {
+          setIcon(`brand:${b.slug}`)
+          setLogo(b.path)
+          setEmoji('')
+          setColor(usableColour(b.hex))
+        }}
+      />
       <div className="icon-picker-row">
         <span className="icon-picker-label">Or an emoji</span>
         <input
