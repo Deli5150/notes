@@ -1,6 +1,6 @@
 import type { Editor as TEditor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { ChevronDown, ChevronUp, Fingerprint, Loader2, Lock, Sparkles, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, Fingerprint, Loader2, Lock, Sparkles, X } from 'lucide-react'
 import { generateTitle } from '../lib/titles'
 import { toast } from '../ui/overlays'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -9,6 +9,7 @@ import { putDataUrl } from '../lib/attachments'
 import { lockedWithOldPassword, openLocked, openWithOldPassword, saveLocked, unlock, unlockWithTouchId, useLock } from '../lib/lock'
 import { desktop, openExternal } from '../lib/storage'
 import { useKeys } from '../lib/shortcuts'
+import { TASK_LABEL, TaskState } from '../ui/TaskState'
 import { noteById, useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, type Note } from '../lib/types'
@@ -431,6 +432,7 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
           }
         }}
       >
+        {note.external && <ExternalBar note={note} />}
         <TitleField note={note} editor={editor} readOnly={readOnly} />
         <EditorContent editor={editor} />
       </div>
@@ -482,6 +484,29 @@ function LockedNote({ note }: { note: Note }) {
 }
 
 /** The right-hand pane: the open note, a locked note's password screen, or nothing. */
+/** On a note mirrored from a connected service: where it's from, its status, and a link there. */
+function ExternalBar({ note }: { note: Note }) {
+  const x = note.external!
+  return (
+    <div className="external-bar">
+      {x.state && (
+        <span className={`external-state is-${x.state}`}>
+          <TaskState state={x.state} size={14} />
+          {TASK_LABEL[x.state]}
+        </span>
+      )}
+      <span className="external-ref">
+        <strong>{x.ref ?? 'GitHub'}</strong>
+        {x.meta && ` · ${x.meta}`}
+      </span>
+      <span className="tb-flex" />
+      <button className="external-open" onClick={() => openExternal(x.url)}>
+        Open on GitHub <ExternalLink size={12} />
+      </button>
+    </div>
+  )
+}
+
 function EmptyPane() {
   const tab = useKeys('new-note:tab')
   const n = useKeys('new-note')
@@ -516,7 +541,7 @@ export function NotePane({ noteId }: { noteId: string | null }) {
   if (!note) return <EmptyPane />
   if (note.locked) {
     if (!opened && (!content || content.id !== note.id)) return <LockedNote note={note} />
-    return <NoteEditor key={note.id} note={note} html={opened?.html ?? content?.html ?? ''} readOnly={Boolean(note.deletedAt)} />
+    return <NoteEditor key={note.id} note={note} html={opened?.html ?? content?.html ?? ''} readOnly={Boolean(note.deletedAt || note.external)} />
   }
-  return <NoteEditor key={note.id} note={note} html={note.html} readOnly={Boolean(note.deletedAt)} />
+  return <NoteEditor key={note.id} note={note} html={note.html} readOnly={Boolean(note.deletedAt || note.external)} />
 }

@@ -2700,3 +2700,124 @@ body.is-float-window {
   padding: 10px 22px 20px;
   background: var(--bg);
 }
+
+/* An inline link that's a button (opens a page in the browser). */
+.link-btn {
+  color: var(--accent);
+  padding: 0;
+  font: inherit;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* ── Connected Smart Folders (src/lib/feeds.ts): task status, Clear Completed, the note's bar ─ */
+
+.task-state {
+  display: inline-flex;
+  flex: none;
+  vertical-align: -2px;
+  margin-right: 5px;
+}
+
+.task-state.is-open {
+  color: #1a7f37;
+}
+
+.task-state.is-done {
+  color: #8250df;
+}
+
+.task-state.is-dropped {
+  color: var(--faint);
+}
+
+:root[data-theme='dark'] .task-state.is-open {
+  color: #3fb950;
+}
+
+:root[data-theme='dark'] .task-state.is-done {
+  color: #a371f7;
+}
+
+.clear-done {
+  flex: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  box-shadow: 0 0 0 1px var(--sep);
+  margin-right: 2px;
+}
+
+.clear-done:hover {
+  background: var(--bg);
+}
+
+.clear-done .lucide {
+  color: #8250df;
+}
+
+:root[data-theme='dark'] .clear-done .lucide {
+  color: #a371f7;
+}
+
+.external-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 10px;
+  font-size: 12px;
+  color: var(--dim);
+  user-select: none;
+}
+
+.external-state {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px 0 7px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: var(--field);
+  color: var(--text);
+}
+
+.external-state .task-state {
+  margin-right: 5px;
+}
+
+.external-ref {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-ref strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.external-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.external-open:hover {
+  background: var(--field);
+}

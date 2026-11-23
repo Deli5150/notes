@@ -1,3 +1,4 @@
+import { TaskState } from './TaskState'
 import { Folder as FolderIcon, Lock, Paperclip, Pin } from 'lucide-react'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { attachmentUrl } from '../lib/attachments'
@@ -126,6 +127,7 @@ const NoteRow = memo(function NoteRow({
           <div className="note-row-title">
             {note.pinned && <Pin size={11} className="note-row-pin" />}
             {note.locked && <Lock size={11} className="note-row-lock" />}
+            {note.external?.state && <TaskState state={note.external.state} />}
             {query ? highlight(title, query) : title}
           </div>
           <span className="note-row-date">{note.deletedAt ? `${daysLeft(note.deletedAt, TRASH_DAYS)}d left` : listDate(note.updatedAt)}</span>

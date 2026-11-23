@@ -1,4 +1,5 @@
-import { ArrowUpDown, ChevronDown, Cloud, CloudOff, FolderCog, Hash, Layers, MessageSquareText, PanelLeftClose, Plus, Search, Settings, SquarePen, Trash2, X, Zap } from 'lucide-react'
+import { clearCompleted, refreshFeed, useServices } from '../lib/feeds'
+import { ArrowUpDown, ChevronDown, CircleCheck, RefreshCw, Cloud, CloudOff, FolderCog, Hash, Layers, MessageSquareText, PanelLeftClose, Plus, Search, Settings, SquarePen, Trash2, X, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { isSystemFolder } from '../lib/defaults'
@@ -244,6 +245,33 @@ function SubFolders() {
 }
 
 /** The button above the list: which notes it shows (All Notes, Quick Notes, Smart Folders, tags, Recently Deleted). */
+/** A connected Smart Folder: refresh it now, and clear its completed tasks. */
+function FeedButtons({ folder }: { folder: Folder }) {
+  const busy = useServices((s) => s.busy.includes(folder.id))
+  const connected = useServices((s) => Boolean(s.github))
+  const done = useStore((s) => s.notes.filter((n) => n.folderId === folder.id && !n.deletedAt && n.external?.state && n.external.state !== 'open').length)
+  return (
+    <>
+      {done > 0 && (
+        <button
+          className="clear-done"
+          title="Move the completed and closed tasks to Recently Deleted"
+          onClick={async () => {
+            if (!(await confirm({ title: `Clear ${done} completed ${done === 1 ? 'task' : 'tasks'}?`, message: 'They move to Recently Deleted and won’t come back here unless they’re reopened.', ok: 'Clear' }))) return
+            const n = clearCompleted(folder.id)
+            toast(`Cleared ${n} completed ${n === 1 ? 'task' : 'tasks'}`)
+          }}
+        >
+          <CircleCheck size={13} /> Clear {done}
+        </button>
+      )}
+      <button className="tb-btn" title={folder.feed?.error ?? (connected ? 'Refresh from GitHub' : 'Connect GitHub in Settings to refresh')} disabled={busy || !connected} onClick={() => void refreshFeed(folder.id)}>
+        <RefreshCw size={14} className={busy ? 'spin' : undefined} />
+      </button>
+    </>
+  )
+}
+
 function SourceSwitcher() {
   const source = useUi((s) => s.source)
   const search = useUi((s) => s.search)
@@ -253,6 +281,7 @@ function SourceSwitcher() {
   const { flat } = useListSections()
   const select = (src: Parameters<ReturnType<typeof useUi.getState>['select']>[0]) => useUi.getState().select(src)
 
+  const feedFolder = source.kind === 'folder' && !search.trim() ? folders.find((f) => f.id === source.id && f.feed) : undefined
   let label = 'All Notes'
   let icon: React.ReactNode = <Layers size={15} />
   if (search.trim()) {
@@ -310,6 +339,7 @@ function SourceSwitcher() {
       </button>
       <span className="list-count">{flat.length}</span>
       <span className="tb-flex" />
+      {feedFolder && <FeedButtons folder={feedFolder} />}
       <button
         className="tb-btn"
         title="Sort, group and view"

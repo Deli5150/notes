@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('notesApp', {
   appleNotes: () => ipcRenderer.invoke('apple-notes'),
   linkPreview: (url) => ipcRenderer.invoke('link-preview', url),
   closeWindow: () => ipcRenderer.send('close-window'),
+  secrets: {
+    get: (name) => ipcRenderer.invoke('secret:get', name),
+    set: (name, value) => ipcRenderer.invoke('secret:set', name, value)
+  },
   float: {
     toggle: () => ipcRenderer.send('float:toggle'),
     hide: () => ipcRenderer.send('float:hide'),

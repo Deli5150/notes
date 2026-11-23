@@ -15,6 +15,8 @@ import { applyTheme } from './lib/themes'
 import { useUi } from './lib/ui'
 import { applyShortcuts } from './lib/shortcuts'
 import { startWindowSync } from './lib/windows'
+import * as feeds from './lib/feeds'
+import { startFeeds } from './lib/feeds'
 import { checkForUpdates, startUpdater, useUpdate } from './lib/updater'
 import { AttachmentsBrowser } from './ui/AttachmentsBrowser'
 import { runCommand } from './ui/commands'
@@ -73,7 +75,7 @@ function browserShortcut(e: KeyboardEvent): string | null {
 }
 
 // For the screenshot hook and debugging: the stores and commands.
-;(window as unknown as { __notes: unknown }).__notes = { store: useStore, ui: useUi, run: runCommand, editor: useEditorRef, importFiles, applyImport, lock, exporter, updater: { check: checkForUpdates, state: useUpdate } }
+;(window as unknown as { __notes: unknown }).__notes = { store: useStore, ui: useUi, run: runCommand, editor: useEditorRef, importFiles, applyImport, lock, exporter, updater: { check: checkForUpdates, state: useUpdate }, feeds }
 
 export default function App() {
   const loaded = useStore((s) => s.loaded)
@@ -124,6 +126,7 @@ export default function App() {
     desktop?.setSpellcheck(s.spellcheck)
     void applyShortcuts()
     startWindowSync()
+    void startFeeds()
     // Android's back button (or gesture): close what's on top, then back to the list, then out.
     const back = isAndroid
       ? CapApp.addListener('backButton', () => {

@@ -1,4 +1,4 @@
-import { Bug, Check, FileText, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
+import { Bug, Check, FileText, Plug, RotateCcw, Cloud, Download, FileDown, Info, Keyboard, Lightbulb, Lock, MessageSquareText, Palette, RefreshCw, Settings2, Type, Upload, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
@@ -8,14 +8,17 @@ import { feedbackUrl, type FeedbackKind } from '../lib/feedback'
 import { googleAvailable } from '../lib/google'
 import { changePassword, lockNow, resetPassword, useLock } from '../lib/lock'
 import { RELEASES_PAGE, REPO_URL } from '../lib/release'
-import { desktop, isAndroid, isMac, openExternal } from '../lib/storage'
+import { desktop, isAndroid, isMac, openExternal, secrets } from '../lib/storage'
+import { listDate } from '../lib/dates'
+import { connectGitHub, createFeedFolder, disconnectGitHub, githubSourceLabel, refreshFeed, useServices } from '../lib/feeds'
+import { githubRepos, NEW_TOKEN_URL } from '../lib/services/github'
 import { useStore } from '../lib/store'
 import { syncNow, turnOffSync, turnOnSync, useSyncState } from '../lib/syncRunner'
 import { THEMES } from '../lib/themes'
 import { useUi, type SettingsPage } from '../lib/ui'
 import { assignable, formatKeys, useKeys, useShortcuts } from '../lib/shortcuts'
 import { checkForUpdates, downloadUpdate, installUpdate, useUpdate } from '../lib/updater'
-import type { AppData, MathResults, Paper, Settings as SettingsT, SortBy, StartWith, TitleEngine } from '../lib/types'
+import type { AppData, FeedSource, MathResults, Paper, Settings as SettingsT, SortBy, StartWith, TitleEngine } from '../lib/types'
 import { VERSION } from '../version'
 import { applyImport, importAppleNotes, importFiles } from '../import'
 import { ALT, MOD, PAPERS, setupPassword, SHIFT } from './actions'
@@ -30,6 +33,7 @@ const PAGES: Array<{ id: SettingsPage; label: string; icon: React.ReactNode }> =
   { id: 'editor', label: 'Text', icon: <Type size={16} /> },
   { id: 'lock', label: 'Password', icon: <Lock size={16} /> },
   { id: 'sync', label: 'Google Sync', icon: <Cloud size={16} /> },
+  { id: 'services', label: 'Connected Services', icon: <Plug size={16} /> },
   { id: 'import', label: 'Import', icon: <Download size={16} /> },
   { id: 'export', label: 'Export & Backup', icon: <Upload size={16} /> },
   ...(desktop ? [{ id: 'shortcuts' as const, label: 'Shortcuts', icon: <Keyboard size={16} /> }] : []),
@@ -749,6 +753,152 @@ function UpdatesPage() {
   )
 }
 
+function ServicesPage() {
+  const gh = useServices()
+  const feeds = useStore(useShallow((s) => s.folders.filter((f) => f.feed)))
+  const [token, setToken] = useState('')
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState('')
+  const connect = async () => {
+    setWorking(true)
+    setError('')
+    try {
+      await connectGitHub(token)
+      setToken('')
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setWorking(false)
+    }
+  }
+  return (
+    <>
+      <div className="set-hero">
+        <Plug size={34} strokeWidth={1.4} />
+        <div>
+          <div className="set-hero-title">Connected Services</div>
+          <div className="set-sub">Smart Folders that fill themselves from other apps. Each item becomes a note you can read and search, with its status when it’s a task, and the folder keeps up as things change there.</div>
+        </div>
+      </div>
+      <Group
+        title="GitHub"
+        footer={
+          <>
+            Notes uses a personal access token from your GitHub account. It stays on this device (encrypted where the system allows) and is never synced: connect each computer or phone you want refreshing. The folders and their notes sync as usual.{' '}
+            <button className="link-btn" onClick={() => openExternal(NEW_TOKEN_URL)}>
+              Create a token on GitHub
+            </button>{' '}
+            (the “repo” scope lets Notes see private repositories’ issues).
+          </>
+        }
+      >
+        {gh.checking ? (
+          <Row label="Checking your GitHub connection…">
+            <RefreshCw size={15} className="spin" />
+          </Row>
+        ) : gh.github ? (
+          <Row label={`Connected as @${gh.github.login}`} sub={gh.github.name}>
+            <button className="btn" onClick={() => void disconnectGitHub()}>
+              Disconnect
+            </button>
+          </Row>
+        ) : (
+          <Row label="Personal access token" sub={error || gh.error || 'Paste a token to connect your GitHub account.'}>
+            <input className="field is-key" type="password" placeholder="ghp_… or github_pat_…" value={token} onChange={(e) => setToken(e.target.value)} />
+            <button className="btn btn-primary" disabled={!token.trim() || working} onClick={() => void connect()}>
+              {working ? 'Checking…' : 'Connect'}
+            </button>
+          </Row>
+        )}
+      </Group>
+      {gh.github && <NewFeedFolder />}
+      {feeds.length > 0 && (
+        <Group title="Smart Folders from GitHub">
+          {feeds.map((f) => (
+            <Row key={f.id} label={f.name} sub={f.feed!.error ?? `${githubSourceLabel(f.feed!)} · ${f.feed!.lastSync ? `refreshed ${listDate(f.feed!.lastSync).toLowerCase()}` : 'not refreshed yet'}`}>
+              <button className="btn" disabled={!gh.github || gh.busy.includes(f.id)} onClick={() => void refreshFeed(f.id)}>
+                {gh.busy.includes(f.id) ? 'Refreshing…' : 'Refresh'}
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  useUi.getState().select({ kind: 'folder', id: f.id })
+                  useUi.setState({ settings: null })
+                }}
+              >
+                Show
+              </button>
+            </Row>
+          ))}
+        </Group>
+      )}
+    </>
+  )
+}
+
+/** Make a Smart Folder from GitHub: which issues, and (for one repository) which. */
+function NewFeedFolder() {
+  const [kind, setKind] = useState<FeedSource['kind']>('assigned')
+  const [repos, setRepos] = useState<string[] | null>(null)
+  const [repo, setRepo] = useState('')
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  useEffect(() => {
+    if (kind !== 'repo' || repos) return
+    void secrets
+      .get('github-token')
+      .then((t) => (t ? githubRepos(t) : []))
+      .then((r) => {
+        setRepos(r)
+        if (!repo && r[0]) setRepo(r[0])
+      })
+      .catch((e) => setError((e as Error).message))
+  }, [kind, repos, repo])
+  const feed: FeedSource = kind === 'repo' ? { provider: 'github', kind, repo } : { provider: 'github', kind }
+  const fallback = kind === 'repo' ? (repo.split('/')[1] ?? 'Issues') : kind === 'assigned' ? 'My Issues' : 'Issues I Opened'
+  return (
+    <Group title="New Smart Folder from GitHub">
+      <Row label="Fill it with">
+        <Select<FeedSource['kind']>
+          value={kind}
+          options={[
+            ['assigned', 'Issues assigned to you'],
+            ['created', 'Issues you opened'],
+            ['repo', 'All issues in a repository']
+          ]}
+          onChange={setKind}
+        />
+      </Row>
+      {kind === 'repo' && (
+        <Row label="Repository" sub={error || (repos ? undefined : 'Loading your repositories…')}>
+          {repos?.length ? (
+            <Select<string> value={repo} options={repos.map((r) => [r, r] as [string, string])} onChange={setRepo} />
+          ) : (
+            <input className="field" placeholder="owner/name" value={repo} onChange={(e) => setRepo(e.target.value.trim())} />
+          )}
+        </Row>
+      )}
+      <Row label="Folder name">
+        <input className="field" placeholder={fallback} value={name} onChange={(e) => setName(e.target.value)} />
+      </Row>
+      <Row label="">
+        <button
+          className="btn btn-primary"
+          disabled={kind === 'repo' && !/^[\w.-]+\/[\w.-]+$/.test(repo)}
+          onClick={() => {
+            const f = createFeedFolder(name.trim() || fallback, feed)
+            setName('')
+            useUi.getState().select({ kind: 'folder', id: f.id })
+            useUi.setState({ settings: null })
+          }}
+        >
+          Create Smart Folder
+        </button>
+      </Row>
+    </Group>
+  )
+}
+
 function FeedbackPage() {
   const [kind, setKind] = useState<FeedbackKind>('bug')
   const [title, setTitle] = useState('')
@@ -832,6 +982,7 @@ const RENDER: Record<SettingsPage, () => React.ReactElement> = {
   sync: SyncPage,
   import: ImportPage,
   export: ExportPage,
+  services: ServicesPage,
   shortcuts: ShortcutsPage,
   updates: UpdatesPage,
   feedback: FeedbackPage,

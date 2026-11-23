@@ -44,6 +44,10 @@ export interface DesktopBridge {
   linkPreview(url: string): Promise<LinkPreview | null>
   openExternal(url: string): void
   closeWindow(): void
+  secrets: {
+    get(name: string): Promise<string | null>
+    set(name: string, value: string | null): Promise<void>
+  }
   float: {
     toggle(): void
     hide(): void
@@ -204,4 +208,34 @@ export async function saveFileAs(name: string, data: string | Uint8Array, mime =
 export function openExternal(url: string): void {
   if (desktop) desktop.openExternal(url)
   else window.open(url, '_blank', 'noopener')
+}
+
+/** Secrets kept on this device only (a connected service's token): the desktop keychain, the
+ *  Android app's private storage, or (in a browser) localStorage. Never synced or exported. */
+export const secrets = {
+  async get(name: string): Promise<string | null> {
+    if (desktop) return desktop.secrets.get(name)
+    if (isAndroid) return readSecret(name)
+    return localStorage.getItem(`notes:secret:${name}`)
+  },
+  async set(name: string, value: string | null): Promise<void> {
+    if (desktop) return desktop.secrets.set(name, value)
+    if (isAndroid) {
+      const path = `secrets/${name}`
+      if (!value) await Filesystem.deleteFile({ path, directory: Directory.Data }).catch(() => {})
+      else await Filesystem.writeFile({ path, data: value, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true })
+      return
+    }
+    if (value) localStorage.setItem(`notes:secret:${name}`, value)
+    else localStorage.removeItem(`notes:secret:${name}`)
+  }
+}
+
+async function readSecret(name: string): Promise<string | null> {
+  try {
+    const r = await Filesystem.readFile({ path: `secrets/${name}`, directory: Directory.Data, encoding: Encoding.UTF8 })
+    return typeof r.data === 'string' ? r.data : await r.data.text()
+  } catch {
+    return null
+  }
 }

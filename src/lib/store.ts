@@ -32,6 +32,8 @@ interface Store extends AppData {
   deleteTag(tag: string): void
   setSettings(patch: Partial<Settings>): void
   addImported(folders: Folder[], notes: Note[]): void
+  /** Adds or replaces whole notes by id (notes mirrored from a connected service). */
+  upsertNotes(notes: Note[]): void
   replaceAll(data: AppData): void
 }
 
@@ -228,6 +230,15 @@ export const useStore = create<Store>((set, get) => ({
 
   setSettings(patch) {
     set((s) => ({ settings: { ...s.settings, ...patch } }))
+  },
+
+  upsertNotes(notes) {
+    if (!notes.length) return
+    const byId = new Map(notes.map((n) => [n.id, n]))
+    set((s) => {
+      const known = new Set(s.notes.map((n) => n.id))
+      return { notes: [...notes.filter((n) => !known.has(n.id)), ...s.notes.map((n) => byId.get(n.id) ?? n)] }
+    })
   },
 
   addImported(folders, notes) {

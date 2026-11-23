@@ -823,6 +823,28 @@ ipcMain.handle('google:fetch-bytes', (_e, url, init) => google.authFetchBytes(ur
 
 // ── Titles with Claude ───────────────────────────────────────────────────────────────────────
 
+// Secrets the page keeps on this computer only (a connected service's token), encrypted with the
+// system keychain (safeStorage), one file each.
+const SECRET = (name) => {
+  if (!/^[a-z0-9-]{1,40}$/.test(String(name))) throw new Error('bad secret name')
+  return path.join(app.getPath('userData'), 'secrets', `${name}.bin`)
+}
+ipcMain.handle('secret:get', (_e, name) => {
+  try {
+    const data = fs.readFileSync(SECRET(name))
+    const text = data.toString()
+    return text.startsWith('plain:') ? text.slice(6) : safeStorage.decryptString(data)
+  } catch {
+    return null
+  }
+})
+ipcMain.handle('secret:set', (_e, name, value) => {
+  const file = SECRET(name)
+  if (!value) return void fs.rmSync(file, { force: true })
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(String(value)) : Buffer.from(`plain:${value}`))
+})
+
 ipcMain.handle('ai:has-key', () => ai.hasKey())
 ipcMain.handle('ai:set-key', (_e, key) => ai.saveKey(key ? String(key).trim() : null))
 ipcMain.handle('ai:title', (_e, text) => ai.title(String(text ?? '')))

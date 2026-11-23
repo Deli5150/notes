@@ -32,6 +32,39 @@ export interface Note {
   deletedAt?: number
   /** The folder it was deleted from, to put it back on Recover. */
   deletedFrom?: string
+  /** A note that mirrors something in a connected service (a GitHub issue): read-only, refreshed by src/lib/feeds.ts. */
+  external?: ExternalItem
+}
+
+/** Where a mirrored note comes from, and its status when it's a task. */
+export interface ExternalItem {
+  provider: ServiceId
+  /** The item's id at the service (stable, also in the note's id). */
+  id: string
+  url: string
+  /** Tasks: open, done (completed) or dropped (closed without doing it). */
+  state?: 'open' | 'done' | 'dropped'
+  /** "Deli5150/notes#12", say. */
+  ref?: string
+  /** "opened by @x · assigned to @y · bug", shown with the status. */
+  meta?: string
+  /** When the service last changed it (ISO), so unchanged items aren't rewritten. */
+  updatedAt: string
+}
+
+export type ServiceId = 'github'
+
+/** A Smart Folder filled from a connected service (Settings → Connected Services). */
+export interface FeedSource {
+  provider: ServiceId
+  /** GitHub: issues assigned to you, issues you opened, or a repository's issues. */
+  kind: 'assigned' | 'created' | 'repo'
+  /** "owner/name" for kind "repo". */
+  repo?: string
+  /** Completed items cleared from the folder: they don't come back unless reopened. */
+  dismissed?: string[]
+  lastSync?: number
+  error?: string
 }
 
 export interface LockedContent {
@@ -74,6 +107,8 @@ export interface Folder {
   order: number
   /** A Smart Folder: shows notes from anywhere that match. */
   smart?: SmartFilter
+  /** A Smart Folder filled from a connected service: its notes mirror the service's items. */
+  feed?: FeedSource
   /** Its pinned tile's icon: a Lucide icon name ("lucide:Book") or an emoji. */
   icon?: string
   /** A brand logo's SVG path (24×24) when icon is "brand:<slug>" (src/lib/brands.ts). */
