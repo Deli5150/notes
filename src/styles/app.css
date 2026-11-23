@@ -3524,3 +3524,54 @@ body.is-float-window {
   flex: 1 1 0;
   min-width: 4px;
 }
+
+/* With its tool bar gone, Excalidraw's top row would centre the Library button: keep it right. */
+.canvas-host .excalidraw .App-menu_top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.canvas-host .excalidraw .layer-ui__wrapper__top-right {
+  margin-left: auto;
+}
+
+/* Phones: menus and dialogs sized for fingers. */
+.is-phone .menu {
+  min-width: 230px;
+  padding: 6px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+.is-phone .menu-item {
+  height: 42px;
+  padding: 0 12px 0 6px;
+  border-radius: 9px;
+}
+
+.is-phone .menu-shortcut {
+  display: none;
+}
+
+.is-phone .menu-header {
+  font-size: 12px;
+}
+
+.is-phone .dialog {
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px - var(--safe-top) - var(--safe-bottom));
+}
+
+.is-phone .alert-buttons .btn {
+  min-height: 40px;
+}
+
+.is-phone .icon-cell,
+.is-phone .emoji-cell {
+  min-height: 40px;
+}
+
+.is-phone .toast {
+  bottom: calc(96px + var(--safe-bottom));
+  max-width: calc(100vw - 32px);
+}

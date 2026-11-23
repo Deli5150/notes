@@ -58,11 +58,14 @@ function tableMenu(): MenuItem[] {
   ]
 }
 
-function moreMenu(): MenuItem[] {
+/** The ••• menu. On a phone it has Share and Lock Now too (their buttons are left out there for room). */
+function moreMenu(phone = false): MenuItem[] {
   const note = selectedNotes()[0]
   const { settings } = useStore.getState()
+  const lock = useLock.getState()
   return [
-    ...(note ? noteMenu([note]).filter((i) => i.label !== 'Share') : []),
+    ...(note ? noteMenu([note]).filter((i) => phone || i.label !== 'Share') : []),
+    ...(phone && settings.lock && lock.key ? [{ label: 'Lock Now', icon: <Lock size={14} />, onClick: lockNow }] : []),
     { separator: true },
     { label: 'Find in Note', shortcut: `${MOD}F`, disabled: !useEditorRef.getState().editor, onClick: find },
     { label: 'Lines & Grids', submenu: paperMenu(note) },
@@ -147,6 +150,7 @@ export function Toolbar() {
         </button>
       </div>
       <div className="tb-group">
+        {!phone && (
         <button
           className="tb-btn"
           title="Lock"
@@ -161,10 +165,13 @@ export function Toolbar() {
         >
           {note?.locked && unlocked ? <LockOpen size={16} /> : <Lock size={16} />}
         </button>
-        <button className="tb-btn" title="Share" disabled={!note} onClick={(e) => menuUnder(e.currentTarget, shareMenu(noteById(noteId)), 'right')}>
-          <Share size={16} />
-        </button>
-        <button className="tb-btn" title="More" onClick={(e) => menuUnder(e.currentTarget, moreMenu(), 'right')}>
+        )}
+        {!phone && (
+          <button className="tb-btn" title="Share" disabled={!note} onClick={(e) => menuUnder(e.currentTarget, shareMenu(noteById(noteId)), 'right')}>
+            <Share size={16} />
+          </button>
+        )}
+        <button className="tb-btn" title="More" onClick={(e) => menuUnder(e.currentTarget, moreMenu(phone), 'right')}>
           <MoreHorizontal size={16} />
         </button>
       </div>
