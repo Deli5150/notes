@@ -513,6 +513,38 @@ select {
   color: var(--on-accent);
 }
 
+/* Notes dragged over a subfolder chip. */
+.chip.is-drop {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* + New subfolder: dashed, so it reads as an action rather than a folder. */
+.chip.chip-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--text) 45%, transparent);
+  color: color-mix(in srgb, var(--text) 75%, transparent);
+}
+
+.chip.chip-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+
+.chip.chip-rename {
+  padding: 1px 4px;
+}
+
+.chip-rename .rename {
+  width: 110px;
+  font-size: 11.5px;
+}
+
 .smart .chip,
 .settings .chip {
   background: var(--field);

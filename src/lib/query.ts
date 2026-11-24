@@ -1,8 +1,8 @@
 import { folderTree } from './store'
 import { QUICK_NOTES, type DateRange, type Folder, type Note, type Settings, type SmartFilter, type SortBy } from './types'
 
-// Which notes the middle column shows: a folder (with its subfolders' notes? no — Apple shows a
-// folder's own notes), All Notes, a Smart Folder, tags, Recently Deleted, or search results.
+// Which notes the middle column shows: a folder (a pinned folder shows its subfolders' notes too —
+// its "All of …" chip), All Notes, a Smart Folder, tags, Recently Deleted, or search results.
 
 export type Source = { kind: 'all' } | { kind: 'folder'; id: string } | { kind: 'tags'; tags: string[] } | { kind: 'trash' }
 
@@ -63,7 +63,16 @@ export function notesFor(source: Source, notes: Note[], folders: Folder[], now =
   }
   const folder = folders.find((f) => f.id === source.id)
   if (folder?.smart) return live.filter((n) => matchesSmart(n, folder.smart!, folders, now))
-  return live.filter((n) => n.folderId === source.id)
+  const tree = new Set(folderTree(folders, source.id))
+  if (tree.size === 1) return live.filter((n) => n.folderId === source.id)
+  // A service's pinned folder: an item in two of its subfolders (assigned to you, and in a repo) shows once.
+  const seen = new Set<string>()
+  return live.filter((n) => {
+    if (!tree.has(n.folderId)) return false
+    if (!n.external) return true
+    const key = `${n.external.provider}:${n.external.id}`
+    return !seen.has(key) && Boolean(seen.add(key))
+  })
 }
 
 export interface SearchHit {

@@ -79,10 +79,10 @@ export function folderMenu(folder: Folder): MenuItem[] {
       ? [{ label: 'Edit Smart Folder…', onClick: () => openSmartFolder(folder) }]
       : [
           { label: 'New Note Here', onClick: () => (useUi.getState().select({ kind: 'folder', id: folder.id }), newNote(folder.id)) },
-          { label: 'New Folder Inside', onClick: () => void newFolder(folder.id) }
+          { label: 'New Subfolder', onClick: () => void newFolder(folder.id) }
         ]),
     { label: 'Sort By', submenu: sortMenu(folder) },
-    ...(folder.parentId ? [{ label: 'Move to Top Level', onClick: () => s.updateFolder(folder.id, { parentId: undefined }) }] : []),
+    ...(folder.parentId && !folder.feed ? [{ label: 'Make a Pinned Folder', onClick: () => s.updateFolder(folder.id, { parentId: undefined }) }] : []),
     ...(!system ? [{ separator: true }, { label: folder.smart ? 'Delete Smart Folder' : 'Delete Folder', danger: true, onClick: () => void deleteFolder(folder) }] : [])
   ]
 }
@@ -186,7 +186,7 @@ function FolderTiles() {
           <span className="folders-toggle is-static">Folders</span>
         )}
         <span className="tb-flex" />
-        <button className="tb-btn is-small" title="New Folder" onClick={() => void newFolder()}>
+        <button className="tb-btn is-small" title="New Pinned Folder" onClick={() => void newFolder()}>
           <Plus size={14} />
         </button>
       </div>
@@ -201,10 +201,12 @@ function FolderTiles() {
   )
 }
 
-/** Inside a folder that has folders of its own: them as chips. */
+/** Inside a pinned folder: "All of …" (every note in it), its subfolders as chips, and + for a new one. */
 function SubFolders() {
   const folders = useStore((s) => s.folders)
   const source = useUi((s) => s.source)
+  const renaming = useUi((s) => s.renaming)
+  const [over, setOver] = useState<string | null>(null)
   if (source.kind !== 'folder') return null
   const current = folders.find((f) => f.id === source.id)
   if (!current || current.smart || isSystemFolder(current.id)) return null
@@ -217,41 +219,68 @@ function SubFolders() {
   const rows: Array<{ f: Folder; depth: number }> = []
   const walk = (id: string, depth: number) => children(id).forEach((f) => (rows.push({ f, depth }), walk(f.id, depth + 1)))
   walk(top.id, 0)
-  if (!rows.length) return null
+  const dropOn = (f: Folder) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (!e.dataTransfer.types.includes(NOTE_DRAG) || f.feed) return
+      e.preventDefault()
+      setOver(f.id)
+    },
+    onDragLeave: () => setOver(null),
+    onDrop: (e: React.DragEvent) => {
+      setOver(null)
+      const ids = e.dataTransfer.getData(NOTE_DRAG)
+      if (!ids) return
+      useStore.getState().moveNotes(ids.split(','), f.id)
+      toast(`Moved to ${f.name}`)
+    }
+  })
+  const add = (
+    <button className="chip chip-add" title={`New subfolder in ${top.name}`} onClick={() => void newFolder(top.id)}>
+      <Plus size={12} />
+      {!rows.length && 'Subfolder'}
+    </button>
+  )
+  if (!rows.length) return <div className="subfolders">{add}</div>
   return (
     <div className="subfolders">
-      <button className={`chip${current.id === top.id ? ' is-on' : ''}`} onClick={() => useUi.getState().select({ kind: 'folder', id: top.id })}>
+      <button className={`chip${current.id === top.id ? ' is-on' : ''}${over === top.id ? ' is-drop' : ''}`} onClick={() => useUi.getState().select({ kind: 'folder', id: top.id })} {...dropOn(top)}>
         All of {top.name}
       </button>
-      {rows.map(({ f }) => (
+      {rows.map(({ f }) =>
+        renaming === f.id ? (
+          <span key={f.id} className="chip is-on chip-rename">
+            <RenameField folder={f} />
+          </span>
+        ) : (
         <button
           key={f.id}
-          className={`chip${current.id === f.id ? ' is-on' : ''}`}
+          className={`chip${current.id === f.id ? ' is-on' : ''}${over === f.id ? ' is-drop' : ''}`}
           onClick={() => useUi.getState().select({ kind: 'folder', id: f.id })}
+          onDoubleClick={() => useUi.setState({ renaming: f.id })}
           onContextMenu={(e) => {
             e.preventDefault()
             showMenu(e.clientX, e.clientY, folderMenu(f))
           }}
-          onDragOver={(e) => e.dataTransfer.types.includes(NOTE_DRAG) && e.preventDefault()}
-          onDrop={(e) => {
-            const ids = e.dataTransfer.getData(NOTE_DRAG)
-            if (ids) useStore.getState().moveNotes(ids.split(','), f.id)
-          }}
+          {...dropOn(f)}
         >
           {f.name}
         </button>
-      ))}
+        )
+      )}
+      {add}
     </div>
   )
 }
 
 /** The button above the list: which notes it shows (All Notes, Quick Notes, Smart Folders, tags, Recently Deleted). */
-/** A connected Smart Folder: refresh it now, and clear its completed tasks. */
-function FeedButtons({ folder }: { folder: Folder }) {
-  const busy = useServices((s) => s.busy.includes(folder.id))
-  const service = serviceById(folder.feed!.provider)
-  const connected = useServices((s) => Boolean(s.accounts[service.id]))
-  const done = useStore((s) => s.notes.filter((n) => n.folderId === folder.id && !n.deletedAt && n.external?.state && n.external.state !== 'open').length)
+/** A connected folder (or a service's folder, for all of its connected folders): refresh now, and clear completed tasks. */
+function FeedButtons({ feeds }: { feeds: Folder[] }) {
+  const ids = feeds.map((f) => f.id)
+  const busy = useServices((s) => ids.some((id) => s.busy.includes(id)))
+  const service = serviceById(feeds[0].feed!.provider)
+  const connected = useServices((s) => feeds.some((f) => Boolean(s.accounts[f.feed!.provider])))
+  const done = useStore((s) => new Set(s.notes.filter((n) => ids.includes(n.folderId) && !n.deletedAt && n.external?.state && n.external.state !== 'open').map((n) => `${n.external!.provider}:${n.external!.id}`)).size)
+  const error = feeds.find((f) => f.feed!.error)?.feed!.error
   return (
     <>
       {done > 0 && (
@@ -260,14 +289,14 @@ function FeedButtons({ folder }: { folder: Folder }) {
           title="Move the completed and closed tasks to Recently Deleted"
           onClick={async () => {
             if (!(await confirm({ title: `Clear ${done} completed ${done === 1 ? 'task' : 'tasks'}?`, message: 'They move to Recently Deleted and won’t come back here unless they’re reopened.', ok: 'Clear' }))) return
-            const n = clearCompleted(folder.id)
+            const n = clearCompleted(ids)
             toast(`Cleared ${n} completed ${n === 1 ? 'task' : 'tasks'}`)
           }}
         >
           <CircleCheck size={13} /> Clear {done}
         </button>
       )}
-      <button className="tb-btn" title={folder.feed?.error ?? (connected ? `Refresh from ${service.name}` : `Connect ${service.name} in Settings to refresh`)} disabled={busy || !connected} onClick={() => void refreshFeed(folder.id)}>
+      <button className="tb-btn" title={error ?? (connected ? `Refresh from ${service.name}` : `Connect ${service.name} in Settings to refresh`)} disabled={busy || !connected} onClick={() => feeds.forEach((f) => void refreshFeed(f.id))}>
         <RefreshCw size={14} className={busy ? 'spin' : undefined} />
       </button>
     </>
@@ -283,7 +312,11 @@ function SourceSwitcher() {
   const { flat } = useListSections()
   const select = (src: Parameters<ReturnType<typeof useUi.getState>['select']>[0]) => useUi.getState().select(src)
 
-  const feedFolder = source.kind === 'folder' && !search.trim() ? folders.find((f) => f.id === source.id && f.feed) : undefined
+  const feeds = useMemo(() => {
+    if (source.kind !== 'folder' || search.trim()) return []
+    const tree = new Set(folderTree(folders, source.id))
+    return folders.filter((f) => tree.has(f.id) && f.feed)
+  }, [source, search, folders])
   let label = 'All Notes'
   let icon: React.ReactNode = <Layers size={15} />
   if (search.trim()) {
@@ -341,7 +374,7 @@ function SourceSwitcher() {
       </button>
       <span className="list-count">{flat.length}</span>
       <span className="tb-flex" />
-      {feedFolder && <FeedButtons folder={feedFolder} />}
+      {feeds.length > 0 && <FeedButtons feeds={feeds} />}
       <button
         className="tb-btn"
         title="Sort, group and view"

@@ -2,7 +2,7 @@ import type { Editor as TEditor } from '@tiptap/core'
 import { putAttachment } from '../lib/attachments'
 import { openImageWand } from './ImageWand'
 import { openCanvas } from '../canvas/state'
-import { Copy, FileDown, FileText, FolderInput, Lock, LockOpen, Pin, PinOff, Printer, Trash2 } from 'lucide-react'
+import { Copy, CornerDownRight, FileDown, FileText, FolderInput, FolderPlus, Lock, LockOpen, Pin, PinOff, Plus, Printer, Trash2 } from 'lucide-react'
 import { insertAttachments, insertFiles, insertLinkPreview } from '../editor/setup'
 import { captureCamera, recordAudio } from '../editor/Capture'
 import { startHtml, useEditorRef } from '../editor/Editor'
@@ -17,6 +17,8 @@ import { useUi } from '../lib/ui'
 import { DEFAULT_FOLDER, QUICK_NOTES, type Folder, type Note, type Paper } from '../lib/types'
 import { confirm, openDialog, prompt, toast, type MenuItem } from './overlays'
 import { PasswordSetup } from './PasswordSetup'
+import { FolderGlyph } from './FolderIcon'
+import { isSystemFolder } from '../lib/defaults'
 import { openSmartFolder } from './SmartFolder'
 
 // What the toolbar, menus, keyboard shortcuts and the desktop app's menu bar do.
@@ -56,7 +58,8 @@ export function newQuickNote(): void {
 }
 
 export async function newFolder(parentId?: string): Promise<Folder | null> {
-  const name = await prompt({ title: 'New Folder', placeholder: 'Name', ok: 'Create' })
+  const parent = parentId ? useStore.getState().folders.find((f) => f.id === parentId) : undefined
+  const name = await prompt({ title: parent ? `New Subfolder in ${parent.name}` : 'New Pinned Folder', placeholder: 'Name', ok: 'Create' })
   if (!name) return null
   const f = useStore.getState().createFolder(name, parentId)
   useUi.getState().select({ kind: 'folder', id: f.id })
@@ -105,18 +108,46 @@ export function duplicate(note = selectedNotes()[0]): void {
   if (copy) useUi.getState().open(copy.id)
 }
 
+/** Move to: the built-in folders, then pinned folders and subfolders in sections of their own. */
 export function moveMenu(notes = selectedNotes()): MenuItem[] {
   const { folders } = useStore.getState()
-  const regular = folders.filter((f) => !f.smart)
-  const build = (parent?: string, depth = 0): MenuItem[] =>
+  const byOrder = (a: Folder, b: Folder) => a.order - b.order || a.name.localeCompare(b.name)
+  // Connected folders mirror a service, so notes don't go in them.
+  const regular = folders.filter((f) => !f.smart && !f.feed)
+  const item = (f: Folder, extra: Partial<MenuItem> = {}): MenuItem => ({
+    label: f.id === DEFAULT_FOLDER ? 'Unfiled' : f.name,
+    icon: <FolderGlyph folder={f} size={14} />,
+    checked: notes.length > 0 && notes.every((n) => n.folderId === f.id && !n.deletedAt),
+    onClick: () => moveTo(notes, f.id),
+    ...extra
+  })
+  const system = [QUICK_NOTES, DEFAULT_FOLDER].map((id) => regular.find((f) => f.id === id)).filter((f): f is Folder => Boolean(f))
+  const pinned = regular.filter((f) => !f.parentId && !isSystemFolder(f.id)).sort(byOrder)
+  // Each pinned folder's subfolders (all levels), shown with where they live.
+  const subs: MenuItem[] = []
+  const walk = (parent: Folder, path: string) =>
     regular
-      .filter((f) => f.parentId === parent)
-      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
-      .flatMap((f) => [
-        { label: `${'   '.repeat(depth)}${f.name}`, checked: notes.length > 0 && notes.every((n) => n.folderId === f.id && !n.deletedAt), onClick: () => moveTo(notes, f.id) },
-        ...build(f.id, depth + 1)
-      ])
-  return [...build(), { separator: true }, { label: 'New Folder…', onClick: () => void newFolder().then((f) => f && moveTo(notes, f.id)) }]
+      .filter((f) => f.parentId === parent.id)
+      .sort(byOrder)
+      .forEach((f) => {
+        subs.push(item(f, { icon: <CornerDownRight size={14} />, shortcut: path }))
+        walk(f, `${path} › ${f.name}`)
+      })
+  for (const p of folders.filter((f) => !f.parentId && !isSystemFolder(f.id) && !f.smart).sort(byOrder)) walk(p, p.name)
+  // Where a new subfolder would go: the pinned folder these notes are in.
+  const top = (() => {
+    let f = folders.find((x) => x.id === notes[0]?.folderId)
+    while (f?.parentId) f = folders.find((x) => x.id === f!.parentId)
+    return f && !isSystemFolder(f.id) && !f.smart ? f : undefined
+  })()
+  return [
+    ...system.map((f) => item(f)),
+    ...(pinned.length ? [{ separator: true }, { header: true, label: 'Pinned Folders' }, ...pinned.map((f) => item(f))] : []),
+    ...(subs.length ? [{ separator: true }, { header: true, label: 'Subfolders' }, ...subs] : []),
+    { separator: true },
+    { label: 'New Pinned Folder…', icon: <FolderPlus size={14} />, onClick: () => void newFolder().then((f) => f && moveTo(notes, f.id)) },
+    ...(top ? [{ label: `New Subfolder in ${top.name}…`, icon: <Plus size={14} />, onClick: () => void newFolder(top.id).then((f) => f && moveTo(notes, f.id)) }] : [])
+  ]
 }
 
 export function moveTo(notes: Note[], folderId: string): void {

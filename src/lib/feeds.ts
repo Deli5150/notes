@@ -6,7 +6,7 @@ import { googleTasksSignIn, googleTasksSignOut } from './services/gtasks'
 import { ServiceError } from './services/net'
 import type { Credentials } from './services/types'
 import { secrets } from './storage'
-import { useStore } from './store'
+import { folderTree, useStore } from './store'
 import type { FeedSource, Folder, Note, ServiceId } from './types'
 import { useUi } from './ui'
 
@@ -96,10 +96,31 @@ export function feedLabel(feed: FeedSource): string {
   return `${service.name}: ${kind?.label ?? feed.kind}${kind?.target && target ? ` (${target})` : ''}`
 }
 
+/** A service's pinned folder: its connected folders are subfolders of it ("All of GitHub" shows them all). */
+export const serviceFolderId = (id: ServiceId): string => `svc-${id}`
+
+/** The service's pinned folder, made when it's missing. The id is the same on every device, so Sync doesn't double it. */
+export function ensureServiceFolder(id: ServiceId): string {
+  const fid = serviceFolderId(id)
+  const s = useStore.getState()
+  if (s.folders.some((f) => f.id === fid)) return fid
+  const service = serviceById(id)
+  const order = Math.max(0, ...s.folders.filter((f) => !f.parentId).map((f) => f.order + 1))
+  useStore.setState((st) => ({
+    folders: [...st.folders, { id: fid, name: service.name, createdAt: Date.now(), order, icon: `brand:${service.id}`, logo: service.logo, color: usableColour(service.color.slice(1)) }]
+  }))
+  return fid
+}
+
+/** Connected folders from before they were grouped (or made by an older version) move into their service's folder. */
+export function groupFeedFolders(): void {
+  for (const f of useStore.getState().folders) if (f.feed && !f.parentId) useStore.getState().updateFolder(f.id, { parentId: ensureServiceFolder(f.feed.provider) })
+}
+
 export function createFeedFolder(name: string, feed: FeedSource): Folder {
   const s = useStore.getState()
   const service = serviceById(feed.provider)
-  const folder = s.createFolder(name)
+  const folder = s.createFolder(name, ensureServiceFolder(feed.provider))
   s.updateFolder(folder.id, { feed, icon: `brand:${service.id}`, logo: service.logo, color: usableColour(service.color.slice(1)) })
   void refreshFeed(folder.id)
   return folder
@@ -175,18 +196,24 @@ export async function refreshFeeds(force = false): Promise<void> {
 }
 
 /** The folder's completed tasks (done or closed) go to Recently Deleted and don't come back. */
-export function clearCompleted(folderId: string): number {
+export function clearCompleted(folderIds: string[]): number {
   const s = useStore.getState()
-  const done = s.notes.filter((n) => n.folderId === folderId && !n.deletedAt && n.external?.state && n.external.state !== 'open')
+  const ids = new Set(folderIds)
+  const done = s.notes.filter((n) => ids.has(n.folderId) && !n.deletedAt && n.external?.state && n.external.state !== 'open')
   if (!done.length) return 0
-  const folder = s.folders.find((f) => f.id === folderId)
-  if (folder?.feed) patchFeed(folderId, { dismissed: [...new Set([...(folder.feed.dismissed ?? []), ...done.map((n) => n.external!.id)])] })
+  for (const id of ids) {
+    const folder = s.folders.find((f) => f.id === id)
+    const mine = done.filter((n) => n.folderId === id).map((n) => n.external!.id)
+    if (folder?.feed && mine.length) patchFeed(id, { dismissed: [...new Set([...(folder.feed.dismissed ?? []), ...mine])] })
+  }
   s.deleteNotes(done.map((n) => n.id))
-  return done.length
+  // Shown once each in a service's folder, so count them once.
+  return new Set(done.map((n) => `${n.external!.provider}:${n.external!.id}`)).size
 }
 
 /** Checks the saved sign-ins, then keeps the folders fresh while Notes runs. */
 export async function startFeeds(): Promise<void> {
+  groupFeedFolders()
   await Promise.all(
     SERVICES.map(async (service) => {
       const cred = await credentials(service.id)
@@ -206,7 +233,9 @@ export async function startFeeds(): Promise<void> {
   useUi.subscribe((s, prev) => {
     const src = s.source
     if (src === prev.source || src.kind !== 'folder') return
-    const f = useStore.getState().folders.find((x) => x.id === src.id)
-    if (f?.feed && (!f.feed.lastSync || Date.now() - f.feed.lastSync > 2 * 60_000)) void refreshFeed(f.id)
+    // A service's folder: every connected folder in it.
+    const folders = useStore.getState().folders
+    const tree = new Set(folderTree(folders, src.id))
+    for (const f of folders) if (tree.has(f.id) && f.feed && (!f.feed.lastSync || Date.now() - f.feed.lastSync > 2 * 60_000)) void refreshFeed(f.id)
   })
 }

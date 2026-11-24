@@ -1,6 +1,17 @@
 /** What's New, newest first (also in CHANGELOG.md for the GitHub releases). */
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: '1.0.2',
+    date: '2026-11-23',
+    items: [
+      'Pinned folders and subfolders: a pinned folder’s “All of …” chip now shows every note in it, including the ones in its subfolders, and each subfolder chip shows just its own notes',
+      'A + chip next to the subfolders makes a new one in the pinned folder you’re in (and New Subfolder on a folder’s right-click menu)',
+      'Connected Services: each service gets one pinned folder (GitHub, Todoist, Linear, Jira, Google Tasks) with your connected folders as its subfolders. “All of GitHub” shows everything once, even an item that’s in two of them, and refresh and Clear Completed work on the whole service. Existing connected folders move in by themselves',
+      'Move to: pinned folders and subfolders are in sections of their own, each subfolder showing which pinned folder it’s in, and you can make a new subfolder right from the menu',
+      'Drop notes on a subfolder chip to move them there, and double-click a subfolder chip to rename it'
+    ]
+  },
+  {
     version: '1.0.1',
     date: '2026-11-23',
     items: [

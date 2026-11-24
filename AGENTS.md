@@ -20,6 +20,13 @@ features and build commands.
   `userData/notes.json` (+ `.bak`). Attachments are files named by a hash of their content in
   `userData/attachments/`, served as `att://file/<id>` (main.cjs sniffs their type).
 - Titles (user's request, 2026-11-21): a separate title field above the body (`note.name`; `note.title` = name or the body's first line). Older notes had their first Title heading lifted into it on load (`withName` in store.ts), imports too (`makeNote`). Generate title: `src/lib/titles.ts` (on-device) or Claude via `desktop/ai.cjs` (user's own key in safeStorage, `claude-opus-5-5`, effort low, `fallbacks: "default"`).
+- Pinned folders vs subfolders (user's terms, 2026-11-23): top-level folders are the pinned tiles; their
+  children are subfolders, shown as chips under the switcher ("All of <pinned>" + one chip each + a
+  dashed + chip). Opening a folder shows its whole tree (`notesFor`, query.ts; feed duplicates shown
+  once). Connected-service folders live under one pinned folder per service with the fixed id
+  `svc-<service>` (feeds.ts `ensureServiceFolder`, so devices agree under Sync); `groupFeedFolders`
+  moves older top-level ones in at start. Move to (actions.tsx `moveMenu`) has Pinned Folders and
+  Subfolders sections and leaves connected folders out.
 - Folders `notes` and `quick` (Quick Notes) always exist. Smart Folders are folders with `smart`
   filters (`src/lib/query.ts`). Recently Deleted = notes with `deletedAt` (purged after 30 days).
 - Locked notes (`src/lib/lock.ts`): one password; PBKDF2 → AES-GCM; content sealed in

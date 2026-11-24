@@ -183,7 +183,7 @@ export function NoteList() {
   const ref = useRef<HTMLDivElement>(null)
   const flatIds = useMemo(() => flat.map((n) => n.id), [flat])
   const folderNames = useMemo(() => new Map(folders.map((f) => [f.id, f.id === 'notes' ? '' : f.name])), [folders])
-  const showFolder = searching || source.kind === 'all' || source.kind === 'tags' || (source.kind === 'folder' && Boolean(folders.find((f) => f.id === source.id)?.smart))
+  const showFolder = searching || source.kind === 'all' || source.kind === 'tags' || (source.kind === 'folder' && Boolean(folders.find((f) => f.id === source.id)?.smart || folders.some((f) => f.parentId === source.id)))
   const selectedRef = useRef(selected)
   selectedRef.current = selected
 
