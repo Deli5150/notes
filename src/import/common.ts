@@ -115,11 +115,16 @@ export function markdownToHtml(md: string): string {
   return html
 }
 
-/** A note's first line as a Title (if it isn't a heading already). */
-export function withTitle(html: string, title: string): string {
+/**
+ * A note's first line as a Title (if it isn't a heading already). `strict`: the title comes from the
+ * other app's own title field (Evernote, Standard Notes), so it wins over a different first heading,
+ * which stays in the body.
+ */
+export function withTitle(html: string, title: string, strict = false): string {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
   const first = doc.body.firstElementChild
   const text = first?.textContent?.trim() ?? ''
+  if (strict && title.trim() && text !== title.trim()) return `<h1>${escapeHtml(title.trim())}</h1>${html}`
   if (first && /^H[1-3]$/.test(first.tagName) && text) {
     if (first.tagName !== 'H1' && text === title.trim()) {
       const h1 = doc.createElement('h1')

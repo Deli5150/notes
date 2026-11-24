@@ -4,6 +4,8 @@
 .editor-pane {
   flex: 1;
   min-width: 0;
+  /* Never taller than the card (with the keyboard open, too): the note scrolls inside it. */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -12,6 +14,7 @@
 
 .editor-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 18px max(40px, calc((100% - 820px) / 2)) 120px;
   cursor: text;

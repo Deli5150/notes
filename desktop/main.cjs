@@ -692,8 +692,9 @@ ipcMain.on('open-external', (_e, url) => {
 // ── Apple Notes (Mac) ────────────────────────────────────────────────────────────────────────
 // Read with JavaScript for Automation; macOS asks once for permission to control Notes.
 
+// Apple Notes by its bundle id: by name, "Notes" is this app once it's installed (productName Notes).
 const APPLE_NOTES_JXA = `
-const Notes = Application('Notes')
+const Notes = Application('com.apple.Notes')
 const folders = []
 const objects = []
 const seen = new Set()
@@ -738,7 +739,7 @@ ipcMain.handle('apple-notes', async () => {
     execFile('/usr/bin/osascript', ['-l', 'JavaScript', '-e', APPLE_NOTES_JXA], { maxBuffer: 2 * 1024 * 1024 * 1024, timeout: 30 * 60_000 }, (err, stdout, stderr) => {
       if (err) {
         const msg = String(stderr || err.message)
-        if (/-1743|not authori[sz]ed|Not allowed/i.test(msg)) return reject(new Error('Notes isn’t allowed to read Apple Notes. Open System Settings → Privacy & Security → Automation, turn on Notes under “Notes” (this app), then try again.'))
+        if (/-1743|not authori[sz]ed|Not allowed/i.test(msg)) return reject(new Error('Notes isn’t allowed to read Apple Notes. Open System Settings → Privacy & Security → Automation, turn on Apple’s Notes under this app (Notes), then try again.'))
         return reject(new Error(`Couldn’t read Apple Notes: ${msg.trim().split('\n').pop()}`))
       }
       try {

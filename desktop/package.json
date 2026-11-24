@@ -1,7 +1,7 @@
 {
   "name": "notes",
   "productName": "Notes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Notes for your thoughts, lists and pictures",
   "author": "Deli5150",
   "license": "MIT",
@@ -21,7 +21,7 @@
   "build": {
     "appId": "app.notes.desktop",
     "productName": "Notes",
-    "copyright": "Copyright \u00a9 2026 Notes",
+    "copyright": "Copyright © 2026 Notes",
     "directories": {
       "output": "../dist",
       "buildResources": "build"

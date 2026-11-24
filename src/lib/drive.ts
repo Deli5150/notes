@@ -87,9 +87,25 @@ export function driveFile(authFetch: AuthFetch, authFetchBytes: AuthFetchBytes) 
       fileId = await multipart(SYNC_FILE, 'application/json', new TextEncoder().encode(body))
     },
 
-    /** The attachments already in Drive. */
-    async attachments(): Promise<Map<string, string>> {
-      if (remoteAtts) return remoteAtts
+    /**
+     * The sync file's version number in Drive (it goes up with every upload, from any device), or
+     * null when there's no file yet. A cheap way to tell another device has synced.
+     */
+    async version(): Promise<string | null> {
+      const id = await findFile()
+      if (!id) return null
+      const res = await authFetch(`${DRIVE}/files/${id}?fields=version`, { headers: { Accept: 'application/json' } })
+      if (res.status === 404) {
+        fileId = null
+        return null
+      }
+      if (!res.ok) throw driveError(res, 'lookup')
+      return (JSON.parse(res.text) as { version?: string }).version ?? null
+    },
+
+    /** The attachments already in Drive (`fresh`: look again, for ones other devices added). */
+    async attachments(fresh = false): Promise<Map<string, string>> {
+      if (remoteAtts && !fresh) return remoteAtts
       const found = new Map<string, string>()
       let page = ''
       do {

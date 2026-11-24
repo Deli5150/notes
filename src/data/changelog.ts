@@ -1,6 +1,19 @@
 /** What's New, newest first (also in CHANGELOG.md for the GitHub releases). */
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: '1.0.1',
+    date: '2026-11-23',
+    items: [
+      'Sync with Google keeps up: your changes go out within a few seconds, even while you keep typing, and as you leave the app. Another device’s changes arrive within about 15 seconds while Notes is open, instead of every few minutes',
+      'Pictures and other attachments added on one device now reach your other devices (they could be missed before)',
+      'Importing from Apple Notes works again. It was reading Delta Notes itself, which is also called Notes once installed',
+      'Importing from Notion works with its current exports, which put the pages in a second zip inside the download',
+      'Better imports from Bear (dates and pins kept, notes in its trash left out), Standard Notes (tags kept, trashed notes left out), Obsidian (tags at the top of a note, and callouts), Evernote (the note’s own title), Notion HTML (checklists), Google Keep and Samsung Notes',
+      'Phones: the toolbar stays on screen while the keyboard is open, and the note scrolls while you type',
+      'Phones: a brush size slider under the canvas toolbar'
+    ]
+  },
+  {
     version: '1.0.0',
     date: '2026-11-22',
     items: [

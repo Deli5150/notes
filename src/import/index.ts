@@ -137,7 +137,7 @@ async function importEnex(text: string, name: string, progress: Progress): Promi
     }
     const tags = [...note.querySelectorAll('tag')].map((t) => t.textContent ?? '')
     const html = await toNoteHtml(body.innerHTML)
-    out.notes.push(makeNote({ html: withTitle(html, title), folderId: folder.id, created: enexDate(note.querySelector('created')?.textContent), updated: enexDate(note.querySelector('updated')?.textContent), tags }))
+    out.notes.push(makeNote({ html: withTitle(html, title, true), folderId: folder.id, created: enexDate(note.querySelector('created')?.textContent), updated: enexDate(note.querySelector('updated')?.textContent), tags }))
   }
   return out
 }
@@ -171,7 +171,8 @@ async function keepNote(k: KeepNote, folderId: string, resolve: Resolver): Promi
   for (const a of k.attachments ?? []) html += `<p><img src="${escapeHtml(a.filePath)}"></p>`
   html = await toNoteHtml(html, resolve)
   const tags = [...(k.labels ?? []).map((l) => l.name), ...(k.isArchived ? ['archived'] : [])]
-  return makeNote({ html, folderId, created: k.createdTimestampUsec ? k.createdTimestampUsec / 1000 : undefined, updated: k.userEditedTimestampUsec ? k.userEditedTimestampUsec / 1000 : undefined, pinned: k.isPinned, tags })
+  const createdUsec = k.createdTimestampUsec ?? k.userEditedTimestampUsec
+  return makeNote({ html, folderId, created: createdUsec ? createdUsec / 1000 : undefined, updated: k.userEditedTimestampUsec ? k.userEditedTimestampUsec / 1000 : undefined, pinned: k.isPinned, tags })
 }
 
 // ── Zips: Keep (Takeout), Notion, Bear, Obsidian, Simplenote, Samsung, backups ───────────────
@@ -204,26 +205,62 @@ async function importBackup(files: Files): Promise<AppData> {
   return data
 }
 
+/** Tags in Markdown front matter: `tags: [a, b]`, `tags: a, b` or a YAML list. */
+function frontMatterTags(md: string): string[] {
+  const fm = /^---\n([\s\S]*?)\n---\n/.exec(md)?.[1]
+  if (!fm) return []
+  const m = /^(?:tags|tag):[ \t]*(.*)$/m.exec(fm)
+  if (!m) return []
+  if (m[1].trim()) return m[1].replace(/^\[|\]$/g, '').split(/[,\s]+/).map((t) => t.replace(/^["'#]+|["']+$/g, '')).filter(Boolean)
+  const list: string[] = []
+  for (const line of fm.slice(m.index + m[0].length).split('\n').slice(1)) {
+    const item = /^\s*-\s*(.+)$/.exec(line)
+    if (!item) break
+    list.push(item[1].trim().replace(/^["'#]+|["']+$/g, ''))
+  }
+  return list
+}
+
+/** Notion's HTML to-do lists (ul.to-do-list with checkbox divs) as checklists. */
+function notionTodos(body: HTMLElement): void {
+  for (const ul of [...body.querySelectorAll('ul.to-do-list')]) {
+    ul.setAttribute('data-type', 'taskList')
+    for (const li of [...ul.children]) {
+      const box = li.querySelector('.checkbox')
+      li.setAttribute('data-type', 'taskItem')
+      li.setAttribute('data-checked', String(Boolean(box?.classList.contains('checkbox-on'))))
+      box?.remove()
+      li.innerHTML = `<p>${li.textContent?.trim() ?? ''}</p>`
+    }
+  }
+}
+
 /** A note from one Markdown/HTML/text file. */
-async function fileNote(path: string, data: Uint8Array, folderId: string, resolve?: Resolver, modified?: number) {
+async function fileNote(path: string, data: Uint8Array, folderId: string, resolve?: Resolver, modified?: number, opts: { created?: number; pinned?: boolean } = {}) {
   const name = path.split('/').pop()!
   const e = ext(name)
   const text = strFromU8(data)
   let html: string
+  let tags: string[] = []
   if (e === 'html' || e === 'htm') {
     const doc = new DOMParser().parseFromString(text, 'text/html')
     // Notion's HTML pages: the content is in .page-body, the title in h1.page-title.
-    const body = doc.querySelector('.page-body') ?? doc.body
+    const body = (doc.querySelector('.page-body') ?? doc.body) as HTMLElement
+    notionTodos(body)
     const title = doc.querySelector('h1.page-title')?.textContent ?? doc.title
     html = withTitle(await toNoteHtml(body.innerHTML, resolve), title || cleanName(name))
   } else if (e === 'txt') {
     html = await toNoteHtml(textToHtml(text))
   } else {
-    // Markdown, with Obsidian/Bear front matter dropped and [[wiki links]] kept as text.
-    const md = text.replace(/^---\n[\s\S]*?\n---\n/, '').replace(/!\[\[([^\]|]+)(\|[^\]]*)?\]\]/g, (_m, f) => `![](${encodeURI(f)})`).replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_m, a, b) => b || a)
+    // Markdown, with Obsidian/Bear front matter dropped (its tags kept), [[wiki links]] kept as text
+    // and Obsidian callouts (> [!note] Title) as quotes that start with their title in bold.
+    tags = frontMatterTags(text)
+    const md = text
+      .replace(/^---\n[\s\S]*?\n---\n/, '')
+      .replace(/^>[ \t]*\[!(\w+)\][+-]?[ \t]*(.*)$/gm, (_m, type: string, title: string) => `> **${title.trim() || type.charAt(0).toUpperCase() + type.slice(1)}**`).replace(/!\[\[([^\]|]+)(\|[^\]]*)?\]\]/g, (_m, f) => `![](${encodeURI(f)})`).replace(/\[\[([^\]|]+)\|?([^\]]*)\]\]/g, (_m, a, b) => b || a)
     html = withTitle(await toNoteHtml(markdownToHtml(md), resolve), cleanName(name))
   }
-  return makeNote({ html, folderId, created: modified, updated: modified })
+  return makeNote({ html, folderId, created: opts.created ?? modified, updated: modified, pinned: opts.pinned, tags })
 }
 
 /** Samsung Notes' .sdocx: a zip whose note text is UTF-16 inside a binary file, with pictures in media/. */
@@ -243,7 +280,8 @@ async function importSdocx(files: Files, name: string): Promise<{ html: string; 
     if (run.trim().length >= 2) strings.push(run)
   }
   const text = strings
-    .map((s) => s.replace(/\r/g, '\n'))
+    // Binary bytes next to the text can read as stray symbols (IPA letters, combining marks).
+    .map((s) => s.replace(/\r/g, '\n').replace(/^[\u0080-\u009f\u0250-\u036f]+|[\u0080-\u009f\u0250-\u036f]+$/g, ''))
     .filter((s) => /[\p{L}\p{N}]/u.test(s) && !/^[A-Za-z0-9+/=_.-]{16,}$/.test(s.trim()))
     .join('\n')
   let html = textToHtml(text.trim() || cleanName(name.replace(/\.sdocx$/i, '')))
@@ -255,7 +293,24 @@ async function importSdocx(files: Files, name: string): Promise<{ html: string; 
   return { html }
 }
 
-async function importZip(files: Files, zipName: string, progress: Progress): Promise<Imported | AppData> {
+/** Zips inside the zip opened too: Notion's exports put the pages in "…-Part-1.zip" files. */
+function withInnerZips(files: Files): Files {
+  const inner = Object.keys(files).filter((n) => /\.zip$/i.test(n) && !n.startsWith('__MACOSX/'))
+  if (!inner.length) return files
+  const out: Files = {}
+  for (const [k, v] of Object.entries(files)) if (!inner.includes(k)) out[k] = v
+  for (const z of inner) {
+    try {
+      Object.assign(out, withInnerZips(unzipSync(files[z])))
+    } catch {
+      out[z] = files[z]
+    }
+  }
+  return out
+}
+
+async function importZip(files0: Files, zipName: string, progress: Progress): Promise<Imported | AppData> {
+  const files = withInnerZips(files0)
   const names = Object.keys(files).filter((n) => !n.startsWith('__MACOSX/') && !n.split('/').pop()!.startsWith('.'))
   if (files['notes.json'] && names.some((n) => n.startsWith('attachments/') || n === 'notes.json')) {
     const raw = JSON.parse(strFromU8(files['notes.json']))
@@ -324,7 +379,15 @@ async function importZip(files: Files, zipName: string, progress: Progress): Pro
     progress(`Importing ${++i} of ${total}…`)
     const textFile = names.find((n) => n.startsWith(b) && /\/text\.(md|markdown|txt)$/i.test(n))
     if (!textFile) continue
-    const note = await fileNote(textFile, files[textFile], root.id, resolverFor(files, b))
+    // Bear keeps the dates, pin and trash in info.json; notes in its trash stay behind.
+    let bear: { creationDate?: string; modificationDate?: string; pinned?: unknown; trashed?: unknown } = {}
+    try {
+      const info = files[`${b}/info.json`]
+      if (info) bear = (JSON.parse(strFromU8(info)) as { 'net.shinyfrog.bear'?: typeof bear })['net.shinyfrog.bear'] ?? {}
+    } catch {}
+    const yes = (v: unknown) => v === true || v === 1 || v === 'yes' || v === '1'
+    if (yes(bear.trashed)) continue
+    const note = await fileNote(textFile, files[textFile], root.id, resolverFor(files, b), time(bear.modificationDate), { created: time(bear.creationDate), pinned: yes(bear.pinned) })
     out.notes.push(note)
   }
   // Notion nests a page's subpages in a folder named like the page: keep one shared top folder.
@@ -368,12 +431,19 @@ async function importJson(text: string, name: string, progress: Progress): Promi
     const out = emptyImport()
     const folder = makeFolder('Standard Notes')
     out.folders.push(folder)
-    const items = j.items.filter((i: { content_type?: string; deleted?: boolean }) => i.content_type === 'Note' && !i.deleted)
+    type SnItem = { uuid?: string; content_type?: string; deleted?: boolean; content?: { title?: string; text?: string; trashed?: boolean; references?: Array<{ uuid?: string }> } }
+    const items = (j.items as SnItem[]).filter((i) => i.content_type === 'Note' && !i.deleted && !i.content?.trashed)
+    // Tags are their own items, pointing at their notes.
+    const tagsOf = new Map<string, string[]>()
+    for (const t of j.items as SnItem[]) {
+      if (t.content_type !== 'Tag' || t.deleted || !t.content?.title) continue
+      for (const r of t.content.references ?? []) if (r.uuid) tagsOf.set(r.uuid, [...(tagsOf.get(r.uuid) ?? []), t.content.title])
+    }
     let i = 0
     for (const it of items) {
       progress(`Importing ${++i} of ${items.length}…`)
-      const c = it.content ?? {}
-      out.notes.push(makeNote({ html: withTitle(await toNoteHtml(markdownToHtml(c.text ?? '')), c.title ?? ''), folderId: folder.id, created: time(it.created_at), updated: time(it.updated_at), pinned: c.appData?.['org.standardnotes.sn']?.pinned }))
+      const c = (it.content ?? {}) as { title?: string; text?: string; appData?: Record<string, { pinned?: boolean }> }
+      out.notes.push(makeNote({ html: withTitle(await toNoteHtml(markdownToHtml(c.text ?? '')), c.title ?? '', true), folderId: folder.id, created: time((it as { created_at?: string }).created_at), updated: time((it as { updated_at?: string }).updated_at), pinned: c.appData?.['org.standardnotes.sn']?.pinned, tags: tagsOf.get(it.uuid ?? '') }))
     }
     return out
   }

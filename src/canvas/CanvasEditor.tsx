@@ -48,6 +48,10 @@ const TOOLS: Array<[Tool, string, string, React.ReactNode]> = [
   ['frame', 'Frame', 'F', <Frame size={16} />]
 ]
 
+/** Phones: the brush size slider's range (Excalidraw's stroke width; its own panel offers 1, 2 and 4). */
+const MIN_SIZE = 0.5
+const MAX_SIZE = 8
+
 /** A phone has room for these; the rest are in its More menu. */
 const PHONE_TOOLS = new Set<Tool>(['selection', 'hand', 'rectangle', 'ellipse', 'arrow', 'freedraw', 'text', 'eraser'])
 
@@ -60,6 +64,7 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
   const [tool, setTool] = useState<Tool>('selection')
   const [saving, setSaving] = useState(false)
   const [locked, setLocked] = useState(false)
+  const [size, setSize] = useState(2)
 
   // The desktop app hands it ⌘Z, ⌘A, ⌘D and the like (which its menu would otherwise take).
   useEffect(() => {
@@ -99,6 +104,20 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
   const pick = (t: Tool) => {
     api.current?.setActiveTool({ type: t, locked })
     setTool(t)
+  }
+
+  /** The brush size for what you draw next, and for whatever is selected. */
+  const resize = (v: number) => {
+    setSize(v)
+    const a = api.current
+    if (!a) return
+    const selected = a.getAppState().selectedElementIds
+    const elements = a.getSceneElements()
+    const changed = elements.some((e) => selected[e.id])
+    a.updateScene({
+      appState: { currentItemStrokeWidth: v },
+      ...(changed ? { elements: elements.map((e) => (selected[e.id] ? { ...e, strokeWidth: v, version: e.version + 1, versionNonce: Math.floor(Math.random() * 2 ** 31) } : e)) } : {})
+    })
   }
 
   const phone = isPhone()
@@ -153,6 +172,15 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
           <Check size={15} /> {saving ? 'Saving…' : 'Done'}
         </button>
       </div>
+      {phone && (
+        <div className="canvas-size">
+          <span className="canvas-size-dot">
+            <span style={{ width: 3 + size * 2.4, height: 3 + size * 2.4 }} />
+          </span>
+          <input type="range" min={MIN_SIZE} max={MAX_SIZE} step={0.5} value={size} aria-label="Brush size" onChange={(e) => resize(Number(e.target.value))} />
+          <span className="canvas-size-value">{size}</span>
+        </div>
+      )}
       <div className="canvas-host">
         <Excalidraw
           excalidrawAPI={(a) => {
@@ -170,6 +198,7 @@ export default function CanvasEditor({ dark }: { dark: boolean }) {
             const t = appState.activeTool.type as Tool
             if (t !== tool) setTool(t)
             if (appState.activeTool.locked !== locked) setLocked(appState.activeTool.locked)
+            if (appState.currentItemStrokeWidth !== size) setSize(appState.currentItemStrokeWidth)
           }}
         />
       </div>
