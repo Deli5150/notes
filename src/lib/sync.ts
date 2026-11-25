@@ -57,6 +57,16 @@ export function entriesOf(data: Synced): Record<string, unknown> {
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)
 
 /**
+ * After uploading a merge whose result couldn't be applied (more was typed while it uploaded):
+ * remember what's now in Drive as this device's base, so the next sync sees its own upload as
+ * where it left off and not as another device's edit. Without this, typing through a sync made
+ * "(conflict copy)" notes of the note being written.
+ */
+export function rememberUpload(current: SyncMeta, uploaded: SyncMeta): SyncMeta {
+  return { ...current, base: { ...current.base, ...uploaded.base } }
+}
+
+/**
  * Stamps what changed between two versions of the data with `now` (and deletions as removed), so
  * the next sync knows this device's copy is newer.
  */

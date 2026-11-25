@@ -1,6 +1,15 @@
 /** What's New, newest first (also in CHANGELOG.md for the GitHub releases). */
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: '1.0.3',
+    date: '2026-11-24',
+    items: [
+      'Sync with Google no longer makes “(conflict copy)” notes of a note you’re writing. If you kept typing while it was sending your changes, it mistook its own upload for an edit from another device, so a new note written in one go could end up as three',
+      'Android: closing the keyboard ends editing, so the cursor doesn’t stay in the note',
+      'Android: tap a link in a note to open it (web links, email, phone numbers and links to other notes). While you’re typing, a tap on a link still puts the cursor in it, so you can edit it'
+    ]
+  },
+  {
     version: '1.0.2',
     date: '2026-11-23',
     items: [

@@ -4,7 +4,7 @@ import { driveFile } from './drive'
 import { googleAvailable, googleFetch, googleFetchBytes, googleSignIn, googleSignOut, SignedOutError } from './google'
 import { attachmentStore, isAndroid } from './storage'
 import { applySynced, onLocalChange, useStore } from './store'
-import { emptyMeta, merge } from './sync'
+import { emptyMeta, merge, rememberUpload } from './sync'
 import type { Note } from './types'
 
 // Runs Sync with Google: right after local changes (and at least every few seconds while you keep
@@ -86,6 +86,9 @@ async function syncOnce(): Promise<void> {
     const latest = useStore.getState()
     // Changed here meanwhile: merge again rather than overwrite that change.
     if (latest.sync.at !== s.sync.at || latest.sync.removed !== s.sync.removed) {
+      // What was just uploaded is this device's own: note it, or the next pass takes it for
+      // another device's edit and keeps a conflict copy.
+      if (result.changedRemote) applySynced({ sync: rememberUpload(latest.sync, result.meta) })
       again = true
       return
     }

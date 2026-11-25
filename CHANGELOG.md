@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2026-11-24
+
+- Sync with Google no longer makes “(conflict copy)” notes of a note you’re writing. If you kept typing while it was sending your changes, it mistook its own upload for an edit from another device, so a new note written in one go could end up as three
+- Android: closing the keyboard ends editing, so the cursor doesn’t stay in the note
+- Android: tap a link in a note to open it (web links, email, phone numbers and links to other notes). While you’re typing, a tap on a link still puts the cursor in it, so you can edit it
+
 ## [1.0.2] - 2026-11-23
 
 - Pinned folders and subfolders: a pinned folder’s “All of …” chip now shows every note in it, including the ones in its subfolders, and each subfolder chip shows just its own notes

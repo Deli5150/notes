@@ -93,6 +93,8 @@ public class NotesNativePlugin extends Plugin {
             insets.put("bottom", keyboard ? 0 : Math.round(bars.bottom / density));
             insets.put("left", Math.round(bars.left / density));
             insets.put("right", Math.round(bars.right / density));
+            // Whether the keyboard is up: when it goes away the page stops editing (no cursor left behind).
+            insets.put("keyboard", keyboard);
             notifyListeners("insets", insets);
             // The bars are handled here (set to 0 for the WebView, not consumed: consuming them
             // stops the keyboard and later changes reaching it).

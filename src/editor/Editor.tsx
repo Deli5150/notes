@@ -17,6 +17,29 @@ import { DEFAULT_FOLDER, type Note } from '../lib/types'
 import { findKey, findStep, mathKey, tagKey, replaceAll, replaceCurrent, setFind } from './extensions'
 import { fontCss, insertFiles, insertLinkPreview, noteExtensions } from './setup'
 
+/** Opens the link at `target` (a link to another note, or a web, mail or phone link). False if there's none. */
+function followLink(target: EventTarget | null): boolean {
+  const el = target instanceof Element ? target : null
+  const a = el?.closest?.('a[href]')
+  if (!a || el!.closest('.att')) return false
+  const href = a.getAttribute('href') ?? ''
+  if (href.startsWith('note://')) {
+    const id = href.slice(7)
+    const note = noteById(id)
+    if (note) {
+      useUi.getState().open(id)
+      if (useUi.getState().source.kind === 'folder' && note.folderId !== (useUi.getState().source as { id: string }).id) useUi.getState().select({ kind: 'folder', id: note.folderId || DEFAULT_FOLDER })
+      useUi.getState().open(id)
+    }
+    return true
+  }
+  if (/^(https?|mailto|tel):/.test(href)) {
+    openExternal(href)
+    return true
+  }
+  return false
+}
+
 // The open note: the TipTap editor with the note's content, saved shortly after each change.
 
 /** The editor of the open note, for the toolbar and menus. */
@@ -343,24 +366,7 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
           return true
         },
         handleClickOn(_view, _pos, _node, _nodePos, event) {
-          const a = (event.target as Element).closest?.('a[href]')
-          if (!a || (event.target as Element).closest('.att')) return false
-          const href = a.getAttribute('href') ?? ''
-          if (href.startsWith('note://')) {
-            const id = href.slice(7)
-            const target = noteById(id)
-            if (target) {
-              useUi.getState().open(id)
-              if (useUi.getState().source.kind === 'folder' && target.folderId !== (useUi.getState().source as { id: string }).id) useUi.getState().select({ kind: 'folder', id: target.folderId || DEFAULT_FOLDER })
-              useUi.getState().open(id)
-            }
-            return true
-          }
-          if (/^(https?|mailto|tel):/.test(href)) {
-            openExternal(href)
-            return true
-          }
-          return false
+          return followLink(event.target)
         }
       },
       onUpdate({ editor }) {
@@ -384,6 +390,41 @@ function NoteEditor({ note, html, readOnly }: { note: Note; html: string; readOn
   )
   const editorRef = useRef<TEditor | null>(null)
   editorRef.current = editor
+
+  // Touch screens: when you're not typing (no cursor in the note), tapping a link opens it instead
+  // of putting the cursor in it and bringing up the keyboard. While typing, a tap still moves the
+  // cursor, so a link's text can be edited. (The editor leaves taps to the browser on touch screens,
+  // so its own click handling never saw them.)
+  useEffect(() => {
+    const dom = editor?.view.dom
+    if (!dom) return
+    let tapped: Element | null = null
+    const down = (e: PointerEvent) => {
+      tapped = null
+      if (e.pointerType !== 'touch' || editor.view.hasFocus()) return
+      const a = (e.target as Element).closest?.('a[href]')
+      if (!a || (e.target as Element).closest('.att')) return
+      tapped = a
+      // No mouse events follow, so the note doesn't take focus (no cursor, no keyboard); the click still comes.
+      e.preventDefault()
+    }
+    const click = (e: MouseEvent) => {
+      if (!tapped) return
+      const a = (e.target as Element).closest?.('a[href]')
+      const same = a === tapped
+      tapped = null
+      if (!same) return
+      e.preventDefault()
+      e.stopPropagation()
+      followLink(a)
+    }
+    dom.addEventListener('pointerdown', down, true)
+    dom.addEventListener('click', click, true)
+    return () => {
+      dom.removeEventListener('pointerdown', down, true)
+      dom.removeEventListener('click', click, true)
+    }
+  }, [editor])
 
   useEffect(() => {
     if (!editor) return

@@ -23,6 +23,8 @@ interface Insets {
   bottom: number
   left: number
   right: number
+  /** The on-screen keyboard is up. */
+  keyboard?: boolean
 }
 
 /**
@@ -36,7 +38,17 @@ export function startInsets(): void {
     for (const side of ['top', 'bottom', 'left', 'right'] as const) if (typeof i[side] === 'number') document.documentElement.style.setProperty(`--safe-area-inset-${side}`, `${i[side]}px`)
   }
   void native.insets().then(apply)
-  void native.addListener('insets', apply)
+  let keyboard = false
+  void native.addListener('insets', (i) => {
+    apply(i)
+    // The keyboard went away (Back, or its own hide button): stop editing, like closing it means
+    // you're done typing. Otherwise the cursor stays in the note and taps on links only move it.
+    if (keyboard && i.keyboard === false) {
+      const el = document.activeElement
+      if (el instanceof HTMLElement && (el.isContentEditable || el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) el.blur()
+    }
+    keyboard = Boolean(i.keyboard)
+  })
 }
 
 /** The Quick Settings tile or the app icon's "New note" shortcut asked for a new note. */
