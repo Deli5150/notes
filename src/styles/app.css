@@ -3680,3 +3680,54 @@ body.is-float-window {
   gap: 0;
   padding: 2px;
 }
+
+/* Settings → Connected Services → New Smart Folder: tick several repositories. */
+.multi-pick {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.multi-pick-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--sep);
+  border-radius: 7px;
+  background: var(--bg);
+  padding: 3px;
+}
+.multi-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.multi-pick-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.multi-pick-row:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.multi-pick-row.is-on {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.multi-pick-row input {
+  accent-color: var(--accent);
+  flex: none;
+}
+.multi-pick-empty {
+  padding: 8px;
+  opacity: 0.6;
+}
+.multi-pick-clear {
+  align-self: flex-start;
+}
+.phone-settings .multi-pick {
+  width: 100%;
+}

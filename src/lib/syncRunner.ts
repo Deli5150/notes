@@ -7,19 +7,23 @@ import { applySynced, onLocalChange, useStore } from './store'
 import { emptyMeta, merge, rememberUpload } from './sync'
 import type { Note } from './types'
 
-// Runs Sync with Google: right after local changes (and at least every few seconds while you keep
-// typing), when the app opens, comes back or goes to the background, whenever another device has
-// synced (a cheap check of the file's version every few seconds while the app is showing), and every
-// few minutes regardless. One sync = download the file, merge, apply here, upload if changed, then
+// Runs Sync with Google: at once when a note or folder is created, deleted, moved or pinned; within
+// a moment of a pause in typing (and at least every few seconds while you keep typing); when the app
+// opens, comes back or goes to the background; whenever another device has synced (a cheap check of
+// the file's version every few seconds while the app is showing, and right after each sync for a
+// little while, when the other device is most likely to answer); and every few minutes regardless. One sync = download the file, merge, apply here, upload if changed, then
 // copy attachments the other side is missing.
 
 const drive = driveFile(googleFetch, googleFetchBytes)
 const EVERY_MS = 5 * 60_000
 /** After a change: wait this long for a pause in typing, but never longer than MAX_WAIT_MS. */
-const QUIET_MS = 1500
-const MAX_WAIT_MS = 6000
+const QUIET_MS = 700
+const MAX_WAIT_MS = 3000
 /** While the app is showing: how often to check whether another device has synced. */
-const CHECK_MS = 15_000
+const CHECK_MS = 4000
+/** For this long after a change on either side, check every FAST_CHECK_MS instead. */
+const FAST_FOR_MS = 60_000
+const FAST_CHECK_MS = 2000
 
 export const useSyncState = create<{ busy: boolean; progress?: string; conflicts: number }>(() => ({ busy: false, conflicts: 0 }))
 
@@ -106,10 +110,18 @@ async function syncOnce(): Promise<void> {
 let seenVersion: string | null = null
 
 /** Syncs if another device has synced since this one did. */
+let lastActivity = 0
+let lastCheck = 0
 async function checkRemote(): Promise<void> {
   if (running || !useStore.getState().sync.enabled || document.visibilityState !== 'visible') return
+  const now = Date.now()
+  if (now - lastCheck < (now - lastActivity < FAST_FOR_MS ? FAST_CHECK_MS : CHECK_MS) - 250) return
+  lastCheck = now
   const v = await drive.version().catch(() => null)
-  if (v && v !== seenVersion) void syncNow()
+  if (v && v !== seenVersion) {
+    lastActivity = Date.now()
+    void syncNow()
+  }
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -120,10 +132,13 @@ let started = false
 export function startSync(): void {
   if (started) return
   started = true
-  onLocalChange(() => {
+  onLocalChange((structural) => {
     if (timer) clearTimeout(timer)
+    lastActivity = Date.now()
     firstChange ||= Date.now()
-    const wait = Math.max(0, Math.min(QUIET_MS, firstChange + MAX_WAIT_MS - Date.now()))
+    // Creating, deleting or moving something goes up at once (a short beat lets a burst, like
+    // deleting several notes, go in one sync); typing waits for a pause.
+    const wait = structural ? 150 : Math.max(0, Math.min(QUIET_MS, firstChange + MAX_WAIT_MS - Date.now()))
     timer = setTimeout(() => {
       timer = null
       firstChange = 0
@@ -131,8 +146,9 @@ export function startSync(): void {
     }, wait)
   })
   setInterval(() => void syncNow(), EVERY_MS)
-  setInterval(() => void checkRemote(), CHECK_MS)
+  setInterval(() => void checkRemote(), FAST_CHECK_MS)
   window.addEventListener('focus', () => void syncNow())
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void checkRemote())
   // Leaving the app (Android pauses it soon after): send what's waiting now.
   const leaving = () => {
     if (!timer) return

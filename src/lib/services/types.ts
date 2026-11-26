@@ -31,6 +31,10 @@ export interface SourceKind {
     options?: (cred: Credentials) => Promise<Array<[id: string, name: string]>>
     /** Typed by hand (Jira's JQL). */
     free?: boolean
+    /** Several can be ticked (kept in FeedSource.target, comma-separated). */
+    multi?: boolean
+    /** May be left empty (then it means "all of them"). */
+    optional?: boolean
   }
 }
 

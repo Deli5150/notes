@@ -261,9 +261,23 @@ export function applySynced(patch: Partial<Store>): void {
   }
 }
 
-const changeListeners = new Set<() => void>()
-/** Called after this device changes something that syncs. */
-export const onLocalChange = (fn: () => void): (() => void) => (changeListeners.add(fn), () => changeListeners.delete(fn))
+const changeListeners = new Set<(structural: boolean) => void>()
+/** Called after this device changes something that syncs. `structural`: a note or folder was
+ *  added, deleted, restored, moved, pinned or renamed (sent at once), not just typing in a note. */
+export const onLocalChange = (fn: (structural: boolean) => void): (() => void) => (changeListeners.add(fn), () => changeListeners.delete(fn))
+
+/** True when the change is more than an edit to the text of notes that already existed. */
+export function isStructural(prev: Pick<Store, 'notes' | 'folders'>, next: Pick<Store, 'notes' | 'folders'>): boolean {
+  if (prev.folders !== next.folders || prev.notes.length !== next.notes.length) return true
+  const before = new Map(prev.notes.map((n) => [n.id, n]))
+  for (const n of next.notes) {
+    const o = before.get(n.id)
+    if (!o) return true
+    if (o === n) continue
+    if (o.deletedAt !== n.deletedAt || o.folderId !== n.folderId || o.pinned !== n.pinned || Boolean(o.locked) !== Boolean(n.locked)) return true
+  }
+  return false
+}
 
 // Note what changed for Sync, and save shortly after changes.
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -280,7 +294,8 @@ useStore.subscribe((state, prev) => {
     const stamped = stampChanges(prev, state, state.sync)
     if (stamped) {
       useStore.setState({ sync: stamped })
-      changeListeners.forEach((fn) => fn())
+      const structural = isStructural(prev, state)
+      changeListeners.forEach((fn) => fn(structural))
       return
     }
   }

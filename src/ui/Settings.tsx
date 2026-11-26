@@ -957,6 +957,34 @@ function ServicesPage() {
   )
 }
 
+/** A searchable checklist (GitHub repositories for a Smart Folder). */
+function MultiPick({ options, picked, onChange }: { options: Array<[string, string]>; picked: string[]; onChange: (ids: string[]) => void }) {
+  const [q, setQ] = useState('')
+  const on = new Set(picked)
+  const shown = options.filter(([id, name]) => !q.trim() || `${id} ${name}`.toLowerCase().includes(q.trim().toLowerCase()))
+  // Picked ones first, so they stay in view while searching a long list.
+  shown.sort((a, b) => Number(on.has(b[0])) - Number(on.has(a[0])))
+  return (
+    <div className="multi-pick">
+      <input className="field" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="multi-pick-list" role="listbox" aria-multiselectable="true">
+        {shown.map(([id, name]) => (
+          <label key={id} className={`multi-pick-row${on.has(id) ? ' is-on' : ''}`} role="option" aria-selected={on.has(id)}>
+            <input type="checkbox" checked={on.has(id)} onChange={(e) => onChange(e.target.checked ? [...picked, id] : picked.filter((p) => p !== id))} />
+            <span>{name}</span>
+          </label>
+        ))}
+        {!shown.length && <div className="multi-pick-empty">No matches</div>}
+      </div>
+      {picked.length > 0 && (
+        <button className="btn multi-pick-clear" onClick={() => onChange([])}>
+          Clear
+        </button>
+      )}
+    </div>
+  )
+}
+
 /** Make a Smart Folder from a connected service: which service, which of its lists, which target. */
 function NewFeedFolder({ services }: { services: Service[] }) {
   const [serviceId, setServiceId] = useState<ServiceId>(services[0].id)
@@ -977,15 +1005,20 @@ function NewFeedFolder({ services }: { services: Service[] }) {
       .then((o) => {
         if (!live) return
         setOptions(o)
-        if (o[0]) setTarget(o[0][0])
+        if (o[0] && !source.target?.multi) setTarget(o[0][0])
       })
       .catch((e) => live && setError((e as Error).message))
     return () => {
       live = false
     }
   }, [service.id, source.kind, source.target])
-  const targetName = options?.find(([id]) => id === target)?.[1]
-  const fallback = source.target && !source.target.free ? (targetName?.replace(/ \([^)]*\)$/, '').split('/').pop() ?? source.folderName) : source.folderName
+  const multi = Boolean(source.target?.multi)
+  const optional = Boolean(source.target?.optional)
+  const picked = target.split(',').map((t) => t.trim()).filter(Boolean)
+  const nameOf = (id: string) => options?.find(([o]) => o === id)?.[1] ?? id
+  const targetName = multi ? (picked.length > 2 ? `${picked.length} repositories` : picked.map(nameOf).join(', ')) : options?.find(([id]) => id === target)?.[1]
+  const short = (n?: string) => n?.replace(/ \([^)]*\)$/, '').split('/').pop()
+  const fallback = !source.target || source.target.free ? source.folderName : multi ? (picked.length === 1 ? (short(nameOf(picked[0])) ?? source.folderName) : source.folderName) : (short(targetName) ?? source.folderName)
   return (
     <Group title="New connected Smart Folder">
       <Row label="From">
@@ -1002,8 +1035,13 @@ function NewFeedFolder({ services }: { services: Service[] }) {
         <Select<string> value={source.kind} options={service.sources.map((k) => [k.kind, k.label] as [string, string])} onChange={setKind} />
       </Row>
       {source.target && (
-        <Row label={source.target.label} sub={error || (!source.target.free && !options ? 'Loading…' : undefined)}>
-          {options?.length ? (
+        <Row
+          label={source.target.label}
+          sub={error || (!source.target.free && !options ? 'Loading…' : multi ? (picked.length ? `${picked.length} picked` : optional ? 'None picked: all of them' : 'Pick one or more') : undefined)}
+        >
+          {multi && options?.length ? (
+            <MultiPick options={options} picked={picked} onChange={(ids) => setTarget(ids.join(','))} />
+          ) : options?.length ? (
             <Select<string> value={target} options={options} onChange={setTarget} />
           ) : (
             <input className="field" placeholder={source.target.placeholder} value={target} onChange={(e) => setTarget(e.target.value)} />
@@ -1016,9 +1054,10 @@ function NewFeedFolder({ services }: { services: Service[] }) {
       <Row label="">
         <button
           className="btn btn-primary"
-          disabled={Boolean(source.target) && !target.trim()}
+          disabled={Boolean(source.target) && !optional && !target.trim()}
           onClick={() => {
-            const feed: FeedSource = { provider: service.id, kind: source.kind, ...(source.target ? { target: target.trim(), targetName: targetName ?? target.trim() } : {}) }
+            const t = multi ? picked.join(',') : target.trim()
+            const feed: FeedSource = { provider: service.id, kind: source.kind, ...(source.target && t ? { target: t, targetName: targetName || t } : {}) }
             const f = createFeedFolder(name.trim() || fallback, feed)
             setName('')
             useUi.getState().select({ kind: 'folder', id: f.id })

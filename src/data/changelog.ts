@@ -1,6 +1,14 @@
 /** What's New, newest first (also in CHANGELOG.md for the GitHub releases). */
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: '1.0.4',
+    date: '2026-11-26',
+    items: [
+      'Sync with Google is much quicker: creating, deleting, moving or pinning a note or folder goes up right away, typing goes up within a moment of a pause, and your other devices check for changes every few seconds (#2)',
+      'GitHub Smart Folders can show several repositories: pick as many as you like from a searchable list when you make the folder. Issues assigned to you, issues you opened and your pull requests can be narrowed to the repositories you pick, too (#1)'
+    ]
+  },
+  {
     version: '1.0.3',
     date: '2026-11-24',
     items: [

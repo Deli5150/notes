@@ -1,6 +1,6 @@
 {
   "name": "notes",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Delta Notes — a notes app for macOS, Windows and Android (installed as “Notes”)",
   "type": "module",
   "private": true,
@@ -10,7 +10,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --experimental-test-module-mocks tests/*.test.ts",
     "desktop": "node scripts/desktop.mjs && cd desktop && npx electron .",
     "dist:desktop": "node scripts/desktop.mjs --mac --win",
     "android": "node scripts/android.mjs",

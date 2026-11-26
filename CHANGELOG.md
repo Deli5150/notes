@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.4] - 2026-11-26
+
+- Sync with Google is much quicker: creating, deleting, moving or pinning a note or folder goes up right away, typing goes up within a moment of a pause, and your other devices check for changes every few seconds (#2)
+- GitHub Smart Folders can show several repositories: pick as many as you like from a searchable list when you make the folder. Issues assigned to you, issues you opened and your pull requests can be narrowed to the repositories you pick, too (#1)
+
 ## [1.0.3] - 2026-11-24
 
 - Sync with Google no longer makes “(conflict copy)” notes of a note you’re writing. If you kept typing while it was sending your changes, it mistook its own upload for an edit from another device, so a new note written in one go could end up as three

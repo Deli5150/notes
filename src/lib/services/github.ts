@@ -84,6 +84,11 @@ const repos = async (cred: Credentials): Promise<Array<[string, string]>> => {
 }
 
 const target = (feed: FeedSource) => feed.target ?? feed.repo ?? ''
+/** The repositories a folder is set to ("owner/name", comma-separated in its target). */
+export const targetRepos = (feed: FeedSource): string[] => target(feed).split(',').map((r) => r.trim()).filter(Boolean)
+const repoOf = (i: Issue) => i.repository?.full_name ?? i.repository_url?.split('/repos/')[1] ?? ''
+const REPO_PICK = { label: 'Repositories', placeholder: 'owner/name, owner/other', options: repos, multi: true }
+const REPO_FILTER = { ...REPO_PICK, optional: true }
 
 export const github: Service = {
   id: 'github',
@@ -102,24 +107,40 @@ export const github: Service = {
     return { login: `@${data.login}`, name: data.name ?? undefined }
   },
   sources: [
-    { kind: 'assigned', label: 'Issues assigned to you', folderName: 'My Issues' },
-    { kind: 'created', label: 'Issues you opened', folderName: 'Issues I Opened' },
-    { kind: 'repo', label: 'All issues in a repository', folderName: 'Issues', target: { label: 'Repository', placeholder: 'owner/name', options: repos } },
-    { kind: 'pr-created', label: 'Pull requests you opened', folderName: 'My Pull Requests' },
-    { kind: 'pr-review', label: 'Pull requests waiting for your review', folderName: 'Reviews' },
-    { kind: 'pr-repo', label: 'All pull requests in a repository', folderName: 'Pull Requests', target: { label: 'Repository', placeholder: 'owner/name', options: repos } }
+    { kind: 'assigned', label: 'Issues assigned to you', folderName: 'My Issues', target: REPO_FILTER },
+    { kind: 'created', label: 'Issues you opened', folderName: 'Issues I Opened', target: REPO_FILTER },
+    { kind: 'repo', label: 'All issues in repositories', folderName: 'Issues', target: REPO_PICK },
+    { kind: 'pr-created', label: 'Pull requests you opened', folderName: 'My Pull Requests', target: REPO_FILTER },
+    { kind: 'pr-review', label: 'Pull requests waiting for your review', folderName: 'Reviews', target: REPO_FILTER },
+    { kind: 'pr-repo', label: 'All pull requests in repositories', folderName: 'Pull Requests', target: REPO_PICK }
   ],
   async items(cred, feed) {
-    const repo = target(feed)
-    let list: { rows: Issue[]; complete: boolean }
+    const picked = targetRepos(feed)
     const pulls = feed.kind.startsWith('pr-')
-    if (feed.kind === 'repo') list = await all<Issue>(cred, `/repos/${repo}/issues?state=all&sort=updated&per_page=100`, (d) => d as Issue[])
-    else if (feed.kind === 'pr-repo') list = await all<Issue>(cred, `/repos/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=100`, (d) => d as Issue[])
-    else if (pulls) {
-      const q = feed.kind === 'pr-review' ? 'is:pr is:open review-requested:@me' : 'is:pr author:@me'
-      list = await all<Issue>(cred, `/search/issues?q=${encodeURIComponent(q)}&sort=updated&per_page=100`, (d) => (d as { items: Issue[] }).items)
-    } else list = await all<Issue>(cred, `/issues?filter=${feed.kind}&state=all&sort=updated&per_page=100`, (d) => d as Issue[])
+    // One list per repository, tagged with it (a repo's own list doesn't say which repo it is).
+    const perRepo = async (path: (r: string) => string) => {
+      const lists = await Promise.all(picked.map(async (r) => {
+        const l = await all<Issue>(cred, path(r), (d) => d as Issue[])
+        return { rows: l.rows.map((i) => ({ ...i, repository: i.repository ?? { full_name: r } })), complete: l.complete }
+      }))
+      return { rows: lists.flatMap((l) => l.rows), complete: lists.every((l) => l.complete) }
+    }
+    let list: { rows: Issue[]; complete: boolean }
+    if (feed.kind === 'repo') list = await perRepo((r) => `/repos/${r}/issues?state=all&sort=updated&per_page=100`)
+    else if (feed.kind === 'pr-repo') list = await perRepo((r) => `/repos/${r}/pulls?state=all&sort=updated&direction=desc&per_page=100`)
+    else {
+      if (pulls) {
+        const q = feed.kind === 'pr-review' ? 'is:pr is:open review-requested:@me' : 'is:pr author:@me'
+        // Search can narrow to the picked repositories itself.
+        const scope = picked.map((r) => ` repo:${r}`).join('')
+        list = await all<Issue>(cred, `/search/issues?q=${encodeURIComponent(q + scope)}&sort=updated&per_page=100`, (d) => (d as { items: Issue[] }).items)
+      } else list = await all<Issue>(cred, `/issues?filter=${feed.kind}&state=all&sort=updated&per_page=100`, (d) => d as Issue[])
+      if (picked.length) {
+        const keep = new Set(picked.map((r) => r.toLowerCase()))
+        list = { ...list, rows: list.rows.filter((i) => keep.has(repoOf(i).toLowerCase())) }
+      }
+    }
     const rows = pulls ? list.rows : list.rows.filter((i) => !i.pull_request)
-    return { items: await Promise.all(rows.map((i) => toItem(i, repo || undefined, pulls))), complete: list.complete }
+    return { items: await Promise.all(rows.map((i) => toItem(i, picked.length === 1 ? picked[0] : undefined, pulls))), complete: list.complete }
   }
 }
