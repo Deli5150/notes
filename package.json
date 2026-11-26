@@ -1,6 +1,6 @@
 {
   "name": "notes",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Delta Notes — a notes app for macOS, Windows and Android (installed as “Notes”)",
   "type": "module",
   "private": true,
@@ -21,6 +21,7 @@
   "dependencies": {
     "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "8.0.5",
     "@capacitor/core": "^8.6.2",
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/share": "^8.0.3",

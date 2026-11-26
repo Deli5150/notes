@@ -59,6 +59,83 @@ const setAccount = (id: ServiceId, account: Account | null, error?: string) =>
     return { accounts, errors: { ...s.errors, [id]: error } }
   })
 
+// ── Sign-ins on every device (issue #3) ─────────────────────────────────────────────────────
+// Sync with Google keeps each connected service's sign-in in a file of its own in Drive's hidden
+// app folder (SIGNINS_FILE), apart from the notes, so it's never in an export or backup. Each
+// device remembers when it last connected or disconnected each service (META); the newest change
+// wins everywhere, so disconnecting on one device signs the others out too. Google Tasks isn't
+// included: it uses each device's own Google sign-in.
+
+export const SIGNINS_FILE = 'services.json'
+const META = 'services-sync'
+export interface SignIn {
+  /** Absent: disconnected at `at`. */
+  cred?: Credentials
+  at: number
+}
+export type SignIns = Partial<Record<ServiceId, SignIn>>
+
+async function localMeta(): Promise<Partial<Record<ServiceId, number>>> {
+  try {
+    return JSON.parse((await secrets.get(META)) ?? '{}') as Partial<Record<ServiceId, number>>
+  } catch {
+    return {}
+  }
+}
+async function stamp(id: ServiceId, at = Date.now()): Promise<void> {
+  await secrets.set(META, JSON.stringify({ ...(await localMeta()), [id]: at }))
+}
+const signInsChanged = () => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('notes:signins'))
+
+/**
+ * Merges this device's sign-ins with the synced ones: what to save here, and what the synced file
+ * should become (null when it's already right). Pure, for the tests.
+ */
+export function mergeSignIns(local: SignIns, remote: SignIns): { apply: SignIns; doc: SignIns | null } {
+  const apply: SignIns = {}
+  const doc: SignIns = { ...remote }
+  let changed = false
+  for (const id of new Set([...Object.keys(local), ...Object.keys(remote)]) as Set<ServiceId>) {
+    const l = local[id], r = remote[id]
+    if (r && (!l || r.at > l.at)) apply[id] = r
+    else if (l && (!r || l.at > r.at)) {
+      doc[id] = l
+      changed = true
+    }
+  }
+  return { apply, doc: changed ? doc : null }
+}
+
+/** One round of sign-in syncing (called by Sync with Google). */
+export async function syncSignIns(file: { getJson<T>(name: string): Promise<T | null>; putJson(name: string, value: unknown): Promise<void> }): Promise<void> {
+  const meta = await localMeta()
+  const local: SignIns = {}
+  for (const service of SERVICES) {
+    if (service.connect === 'google') continue
+    const cred = await credentials(service.id)
+    const at = meta[service.id]
+    // Connected before sign-ins synced: share it, but let any synced change win.
+    if (cred) local[service.id] = { cred, at: at ?? 1 }
+    else if (at) local[service.id] = { at }
+  }
+  const remote = (await file.getJson<{ services?: SignIns }>(SIGNINS_FILE))?.services ?? {}
+  const { apply, doc } = mergeSignIns(local, remote)
+  for (const [id, sign] of Object.entries(apply) as Array<[ServiceId, SignIn]>) {
+    if (serviceById(id)?.connect === 'google') continue
+    await secrets.set(KEY(id), sign.cred ? JSON.stringify(sign.cred) : null)
+    await stamp(id, sign.at)
+    if (!sign.cred) setAccount(id, null)
+    else
+      try {
+        setAccount(id, await serviceById(id).account(sign.cred))
+      } catch (e) {
+        setAccount(id, null, (e as Error).message)
+      }
+  }
+  if (doc) await file.putJson(SIGNINS_FILE, { services: doc })
+  if (Object.keys(apply).length) void refreshFeeds(true)
+}
+
 /** Checks the sign-in with the service, then keeps it on this device. */
 export async function connectService(id: ServiceId, cred: Credentials): Promise<void> {
   const service = serviceById(id)
@@ -70,6 +147,8 @@ export async function connectService(id: ServiceId, cred: Credentials): Promise<
     const clean = Object.fromEntries(Object.entries(cred).map(([k, v]) => [k, v.trim()]))
     setAccount(id, await service.account(clean))
     await secrets.set(KEY(id), JSON.stringify(clean))
+    await stamp(id)
+    signInsChanged()
   }
   void refreshFeeds(true)
 }
@@ -79,6 +158,10 @@ export async function disconnectService(id: ServiceId): Promise<void> {
   if (serviceById(id).connect === 'google') await googleTasksSignOut().catch(() => {})
   await secrets.set(KEY(id), null)
   setAccount(id, null)
+  if (serviceById(id).connect !== 'google') {
+    await stamp(id)
+    signInsChanged()
+  }
 }
 
 /** The choices for a source's second step (repositories, projects, teams, lists). */

@@ -1,6 +1,14 @@
 /** What's New, newest first (also in CHANGELOG.md for the GitHub releases). */
 export const CHANGELOG: Array<{ version: string; date: string; items: string[] }> = [
   {
+    version: '1.0.5',
+    date: '2026-11-26',
+    items: [
+      'Connected services sign in once for all your devices: with Sync with Google on, a GitHub, Todoist, Linear or Jira sign-in made on one device reaches your others, so you can make and manage connected Smart Folders anywhere. Disconnecting signs them all out. Google Tasks still signs in on each device (#3)',
+      'Android: feedback now opens GitHub’s form inside the app, so the description and the bug or feature form come through instead of just the title. The description is also copied, in case it’s ever missing'
+    ]
+  },
+  {
     version: '1.0.4',
     date: '2026-11-26',
     items: [

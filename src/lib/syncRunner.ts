@@ -1,6 +1,7 @@
 import { App as CapApp } from '@capacitor/app'
 import { create } from 'zustand'
 import { driveFile } from './drive'
+import { syncSignIns } from './feeds'
 import { googleAvailable, googleFetch, googleFetchBytes, googleSignIn, googleSignOut, SignedOutError } from './google'
 import { attachmentStore, isAndroid } from './storage'
 import { applySynced, onLocalChange, useStore } from './store'
@@ -100,6 +101,8 @@ async function syncOnce(): Promise<void> {
     if (result.conflicts) useSyncState.setState((st) => ({ conflicts: st.conflicts + result.conflicts }))
     seenVersion = await drive.version().catch(() => seenVersion)
     await syncAttachments()
+    // Connected-service sign-ins: a problem there shouldn't stop the notes syncing.
+    await syncSignIns(drive).catch((e) => console.warn('Sign-ins didn’t sync:', e))
   } catch (e) {
     const signedOut = e instanceof SignedOutError
     applySynced({ sync: { ...useStore.getState().sync, error: signedOut ? 'Signed out of Google. Turn Sync on again to reconnect.' : (e as Error).message } })
@@ -148,6 +151,8 @@ export function startSync(): void {
   setInterval(() => void syncNow(), EVERY_MS)
   setInterval(() => void checkRemote(), FAST_CHECK_MS)
   window.addEventListener('focus', () => void syncNow())
+  // Connecting or disconnecting a service reaches the other devices right away.
+  window.addEventListener('notes:signins', () => void syncNow())
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && void checkRemote())
   // Leaving the app (Android pauses it soon after): send what's waiting now.
   const leaving = () => {

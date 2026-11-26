@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.5] - 2026-11-26
+
+- Connected services sign in once for all your devices: with Sync with Google on, a GitHub, Todoist, Linear or Jira sign-in made on one device reaches your others, so you can make and manage connected Smart Folders anywhere. Disconnecting signs them all out. Google Tasks still signs in on each device (#3)
+- Android: feedback now opens GitHub’s form inside the app, so the description and the bug or feature form come through instead of just the title. The description is also copied, in case it’s ever missing
+
 ## [1.0.4] - 2026-11-26
 
 - Sync with Google is much quicker: creating, deleting, moving or pinning a note or folder goes up right away, typing goes up within a moment of a pause, and your other devices check for changes every few seconds (#2)

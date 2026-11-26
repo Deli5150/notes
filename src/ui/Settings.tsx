@@ -6,7 +6,7 @@ import { usePhone } from '../lib/phone'
 import { CHANGELOG } from '../data/changelog'
 import { FONT_FAMILIES, fontCss } from '../editor/setup'
 import { exportAllMarkdown, exportBackup } from '../lib/export'
-import { feedbackUrl, type FeedbackKind } from '../lib/feedback'
+import { sendFeedback, type FeedbackKind } from '../lib/feedback'
 import { googleAvailable } from '../lib/google'
 import { changePassword, lockNow, resetPassword, useLock } from '../lib/lock'
 import { RELEASES_PAGE, REPO_URL } from '../lib/release'
@@ -918,7 +918,7 @@ function ServicesPage() {
           <div className="set-sub">Smart Folders that fill themselves from other apps. Each item becomes a note you can read and search, with its status when it’s a task, and the folder keeps up as things change there.</div>
         </div>
       </div>
-      <Group title="Services" footer="Sign-ins stay on this device (encrypted where the system allows) and are never synced: connect each computer or phone you want refreshing. The folders and their notes sync as usual. Notes only reads from these services.">
+      <Group title="Services" footer="Each device keeps its sign-ins encrypted where the system allows. With Sync with Google on, they also go to your other devices through Notes’ private folder in your Google Drive (kept apart from your notes, never in exports or backups), and disconnecting signs the others out too. Google Tasks signs in on each device. Notes only reads from these services.">
         {SERVICES.map((s) => (
           <ServiceRow key={s.id} service={s} />
         ))}
@@ -1100,10 +1100,11 @@ function FeedbackPage() {
           className="btn btn-primary"
           disabled={!title.trim()}
           onClick={() => {
-            openExternal(feedbackUrl(kind, title, text, VERSION))
-            setTitle('')
-            setText('')
-            toast('Opened GitHub in your browser')
+            void sendFeedback(kind, title, text, VERSION).then((r) => {
+              setTitle('')
+              setText('')
+              toast(r === 'copied' ? 'Opened GitHub. Your description is also copied, in case it’s missing there' : desktop ? 'Opened GitHub in your browser' : 'Opened GitHub')
+            }, (e) => toast(`Couldn’t open GitHub: ${(e as Error).message}`))
           }}
         >
           Continue on GitHub

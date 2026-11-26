@@ -221,7 +221,8 @@ export function openExternal(url: string): void {
 }
 
 /** Secrets kept on this device only (a connected service's token): the desktop keychain, the
- *  Android app's private storage, or (in a browser) localStorage. Never synced or exported. */
+ *  Android app's private storage, or (in a browser) localStorage. Never exported; connected-service
+ *  sign-ins are synced separately by feeds.ts syncSignIns. */
 export const secrets = {
   async get(name: string): Promise<string | null> {
     if (desktop) return desktop.secrets.get(name)

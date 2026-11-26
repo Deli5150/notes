@@ -1,6 +1,6 @@
-
+import { Browser } from '@capacitor/browser'
 import { REPO_URL } from './release'
-import { desktop } from './storage'
+import { desktop, isAndroid } from './storage'
 
 // Report a bug or suggest a feature: written in the app and finished on GitHub. The app only builds
 // a link to the repo's new-issue form (.github/ISSUE_TEMPLATE) with the fields filled in; the person
@@ -41,4 +41,23 @@ export function feedbackUrl(kind: FeedbackKind, title: string, text: string, ver
     url = `${REPO_URL}/issues/new?${query(fields)}`
   }
   return url
+}
+
+/**
+ * Opens the filled-in form. Android opens it in a browser tab inside the app (a Custom Tab): handed
+ * to the system, the link goes to the GitHub app when it's installed, whose own new-issue screen
+ * keeps only the title and drops the description and the bug/feature form. The description is also
+ * copied, in case anything still leaves it out. The desktop opens the default browser.
+ */
+export async function sendFeedback(kind: FeedbackKind, title: string, text: string, version: string): Promise<'copied' | 'opened'> {
+  const url = feedbackUrl(kind, title, text, version)
+  if (desktop) {
+    desktop.openExternal(url)
+    return 'opened'
+  }
+  let copied = false
+  if (text.trim()) copied = await navigator.clipboard?.writeText(text.trim()).then(() => true, () => false) ?? false
+  if (isAndroid) await Browser.open({ url, presentationStyle: 'fullscreen' })
+  else window.open(url, '_blank', 'noopener')
+  return copied ? 'copied' : 'opened'
 }

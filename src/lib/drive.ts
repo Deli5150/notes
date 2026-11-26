@@ -44,6 +44,18 @@ export function driveFile(authFetch: AuthFetch, authFetchBytes: AuthFetchBytes) 
     return fileId
   }
 
+  const namedIds = new Map<string, string>()
+  async function named(name: string): Promise<string | null> {
+    const known = namedIds.get(name)
+    if (known) return known
+    const q = encodeURIComponent(`name='${name}'`)
+    const res = await authFetch(`${DRIVE}/files?spaces=appDataFolder&q=${q}&fields=files(id)&pageSize=10`, { headers: { Accept: 'application/json' } })
+    if (!res.ok) throw driveError(res, 'lookup')
+    const id = (JSON.parse(res.text) as { files?: Array<{ id: string }> }).files?.[0]?.id ?? null
+    if (id) namedIds.set(name, id)
+    return id
+  }
+
   async function multipart(name: string, mime: string, data: Uint8Array): Promise<string> {
     const boundary = `notes${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
     const enc = new TextEncoder()
@@ -133,6 +145,34 @@ export function driveFile(authFetch: AuthFetch, authFetchBytes: AuthFetchBytes) 
       return res.data
     },
 
+    /** A small JSON file of its own in the app folder (connected-service sign-ins), or null. */
+    async getJson<T>(name: string): Promise<T | null> {
+      const id = await named(name)
+      if (!id) return null
+      const res = await authFetch(`${DRIVE}/files/${id}?alt=media`)
+      if (res.status === 404) {
+        namedIds.delete(name)
+        return null
+      }
+      if (!res.ok) throw driveError(res, 'download')
+      try {
+        return JSON.parse(res.text) as T
+      } catch {
+        return null
+      }
+    },
+
+    async putJson(name: string, value: unknown): Promise<void> {
+      const body = JSON.stringify(value)
+      const id = await named(name)
+      if (id) {
+        const res = await authFetch(`${UPLOAD}/files/${id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body })
+        if (res.ok) return
+        if (res.status !== 404) throw driveError(res, 'upload')
+      }
+      namedIds.set(name, await multipart(name, 'application/json', new TextEncoder().encode(body)))
+    },
+
     async email(): Promise<string | undefined> {
       const res = await authFetch(`${DRIVE}/about?fields=user(emailAddress)`, { headers: { Accept: 'application/json' } }).catch(() => null)
       if (!res?.ok) return undefined
@@ -141,6 +181,7 @@ export function driveFile(authFetch: AuthFetch, authFetchBytes: AuthFetchBytes) 
 
     reset() {
       fileId = null
+      namedIds.clear()
       remoteAtts = null
     }
   }

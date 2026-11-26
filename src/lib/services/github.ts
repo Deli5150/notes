@@ -5,7 +5,7 @@ import { check, json, serviceFetch } from './net'
 import { PAGES, type Credentials, type FeedItem, type Service } from './types'
 
 // GitHub: issues and pull requests as notes. A personal access token from github.com
-// (Settings → Developer settings), kept on this device only.
+// (Settings → Developer settings), kept on the device and synced to the user's other devices by Sync with Google (feeds.ts syncSignIns).
 
 const API = 'https://api.github.com'
 export const GITHUB_LOGO = LOGOS.github.path
